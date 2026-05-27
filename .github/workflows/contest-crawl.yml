@@ -1,0 +1,40 @@
+name: 공모전 데이터 크롤링
+
+on:
+  schedule:
+    - cron: '0 17 * * *'  # UTC 17:00 = KST 02:00
+  workflow_dispatch:        # 수동 실행 가능
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: crawlers/requirements.txt
+
+      - name: 의존성 설치
+        run: |
+          cd crawlers
+          pip install -r requirements.txt
+
+      - name: Playwright 브라우저 설치
+        run: playwright install chromium --with-deps
+
+      - name: 공모전 크롤링 실행
+        run: python crawlers/contest_crawler.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: 실패 시 알림
+        if: failure()
+        run: echo "::error::공모전 크롤링 실패! Supabase 기존 데이터는 유지됩니다."

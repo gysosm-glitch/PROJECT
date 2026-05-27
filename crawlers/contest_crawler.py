@@ -112,52 +112,73 @@ def crawl_contestkorea():
     logger.info("=== 공모전닷컴 크롤링 시작 ===")
     base_url = 'https://www.contestkorea.com'
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept-Language': 'ko-KR,ko;q=0.9',
     }
 
     count = 0
     for page in range(1, 6):  # 최대 5페이지
         try:
-            url = f'{base_url}/sub/list.php?Txt_bcode=1&page={page}'
+            url = f'{base_url}/sub/list.php?int_gbn=1&page={page}'
             resp = requests.get(url, headers=headers, timeout=15)
             resp.raise_for_status()
             soup = BeautifulSoup(resp.text, 'lxml')
 
-            items = soup.select('.list_style_con li')
+            items = soup.select('.list_style_2 li')
+            if not items:
+                # Fallback check
+                items = [li for li in soup.find_all("li") if li.find("div", class_="title") and li.find("ul", class_="host")]
+                
             if not items:
                 break
 
             for item in items:
                 try:
-                    title_el = item.select_one('.list_text_box h2 a')
+                    title_el = item.select_one('.title .txt')
+                    if not title_el:
+                        title_el = item.select_one('.title a')
                     if not title_el:
                         continue
 
                     title = title_el.get_text(strip=True)
-                    detail_url = base_url + title_el.get('href', '')
-                    thumbnail = item.select_one('img')
-                    thumbnail_url = thumbnail.get('src', '') if thumbnail else None
+                    
+                    link_el = item.select_one('.title a')
+                    if not link_el:
+                        continue
+                    detail_url = base_url + link_el.get('href', '')
+
+                    # 주최기관
+                    organizer_el = item.select_one('.host .icon_1')
+                    organizer = None
+                    if organizer_el:
+                        organizer = organizer_el.get_text(strip=True).replace('주최', '').strip().lstrip('.').strip()
+
+                    # 분야 태그
+                    category_el = item.select_one('.title .category')
+                    category = category_el.get_text(strip=True) if category_el else ''
 
                     # 날짜 파싱
-                    date_el = item.select_one('.contest_date')
+                    date_el = item.select_one('.date .step-1')
+                    if not date_el:
+                        date_el = item.select_one('.date')
+                        
                     end_date = None
                     if date_el:
                         date_text = date_el.get_text(strip=True)
-                        match = re.search(r'(\d{4})[.\-](\d{2})[.\-](\d{2})', date_text)
+                        # Match formats like 05.25~07.12
+                        match = re.search(r'(\d{2})[.\-/](\d{2})~(\d{2})[.\-/](\d{2})', date_text)
                         if match:
-                            end_date = f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
+                            end_month = match.group(3)
+                            end_day = match.group(4)
+                            current_year = datetime.now().year
+                            if int(end_month) < datetime.now().month:
+                                end_year = current_year + 1
+                            else:
+                                end_year = current_year
+                            end_date = f"{end_year}-{end_month}-{end_day}"
 
                     if not end_date:
                         continue
-
-                    # 주최기관
-                    organizer_el = item.select_one('.contest_organizer')
-                    organizer = organizer_el.get_text(strip=True) if organizer_el else None
-
-                    # 분야 태그
-                    category_el = item.select_one('.list_icon span')
-                    category = category_el.get_text(strip=True) if category_el else ''
 
                     contest = {
                         'title': title,
@@ -165,7 +186,7 @@ def crawl_contestkorea():
                         'field': map_field(title, category),
                         'end_date': end_date,
                         'url': detail_url,
-                        'thumbnail_url': thumbnail_url,
+                        'thumbnail_url': None,
                         'is_active': True,
                         'source': 'contestkorea',
                         'last_crawled_at': datetime.utcnow().isoformat(),
@@ -193,7 +214,7 @@ def crawl_wevity():
     logger.info("=== 위비티 크롤링 시작 ===")
     base_url = 'https://www.wevity.com'
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept-Language': 'ko-KR,ko;q=0.9',
     }
 
@@ -205,44 +226,59 @@ def crawl_wevity():
             resp.raise_for_status()
             soup = BeautifulSoup(resp.text, 'lxml')
 
-            items = soup.select('.list-item')
+            items = soup.select('ul.list li')
             if not items:
                 break
 
             for item in items:
                 try:
-                    title_el = item.select_one('.list-tit a')
+                    # Skip table header item
+                    if 'top' in item.get('class', []):
+                        continue
+                        
+                    title_el = item.select_one('div.tit a')
                     if not title_el:
                         continue
 
-                    title = title_el.get_text(strip=True)
+                    # Extract title cleanly
+                    title_a = BeautifulSoup(str(title_el), 'lxml').find('a')
+                    span = title_a.find('span')
+                    if span:
+                        span.decompose()
+                    title = title_a.get_text(strip=True)
+
                     href = title_el.get('href', '')
-                    detail_url = base_url + href if href.startswith('/') else href
+                    detail_url = base_url + '/' + href if not href.startswith('http') else href
 
-                    thumbnail_el = item.select_one('img')
-                    thumbnail_url = None
-                    if thumbnail_el:
-                        src = thumbnail_el.get('src', '')
-                        thumbnail_url = (base_url + src) if src.startswith('/') else src
+                    # 카테고리
+                    cat_el = item.select_one('div.tit div.sub-tit')
+                    category = cat_el.get_text(strip=True) if cat_el else ''
 
-                    # 마감일
-                    date_el = item.select_one('.due-date')
+                    # 주최
+                    org_el = item.select_one('div.organ')
+                    organizer = org_el.get_text(strip=True) if org_el else None
+
+                    # 마감일 (D-Day 계산)
+                    date_el = item.select_one('div.day')
                     end_date = None
                     if date_el:
-                        match = re.search(r'(\d{4})[.\-](\d{2})[.\-](\d{2})', date_el.get_text())
+                        date_text = date_el.get_text(strip=True)
+                        match = re.search(r'D\-(\d+)', date_text)
+                        days_offset = None
                         if match:
-                            end_date = f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
+                            days_offset = int(match.group(1))
+                        elif 'd-day' in date_text.lower():
+                            days_offset = 0
+                            
+                        if days_offset is not None:
+                            from datetime import timedelta
+                            dt = datetime.utcnow() + timedelta(days=days_offset)
+                            # Adjust to KST
+                            kst_dt = dt + timedelta(hours=9)
+                            end_date = kst_dt.strftime("%Y-%m-%d")
 
                     if not end_date:
                         continue
-
-                    # 주최
-                    org_el = item.select_one('.organizer')
-                    organizer = org_el.get_text(strip=True) if org_el else None
-
-                    # 카테고리
-                    cat_el = item.select_one('.category')
-                    category = cat_el.get_text(strip=True) if cat_el else ''
 
                     contest = {
                         'title': title,
@@ -250,7 +286,7 @@ def crawl_wevity():
                         'field': map_field(title, category),
                         'end_date': end_date,
                         'url': detail_url,
-                        'thumbnail_url': thumbnail_url,
+                        'thumbnail_url': None,
                         'is_active': True,
                         'source': 'wevity',
                         'last_crawled_at': datetime.utcnow().isoformat(),
@@ -271,61 +307,72 @@ def crawl_wevity():
 
 
 # ================================================
-# 링커리어 크롤러 (Playwright - JS 렌더링)
+# 링커리어 크롤러 (Next.js SSR __NEXT_DATA__ JSON 파싱 기반)
 # ================================================
 def crawl_linkareer():
-    """링커리어 (linkareer.com) 크롤링 - Playwright 사용"""
+    """링커리어 (linkareer.com) 크롤링 - Next.js SSR __NEXT_DATA__ JSON 파싱 기반 (초고속/안정적)"""
     logger.info("=== 링커리어 크롤링 시작 ===")
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        logger.error("playwright가 설치되지 않았습니다. pip install playwright && playwright install chromium")
-        return
+    import json
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+    }
 
     count = 0
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.set_extra_http_headers({'Accept-Language': 'ko-KR'})
-
+    for page in range(1, 4):  # 최대 3페이지
         try:
-            for pg in range(1, 4):  # 최대 3페이지
-                page.goto(f'https://linkareer.com/list/contest?page={pg}', timeout=30000)
-                page.wait_for_selector('.activity-list-item', timeout=10000)
-
-                items = page.query_selector_all('.activity-list-item')
-                if not items:
-                    break
-
-                for item in items:
+            url = f'https://linkareer.com/list/contest?page={page}'
+            resp = requests.get(url, headers=headers, timeout=15)
+            resp.raise_for_status()
+            
+            soup = BeautifulSoup(resp.text, 'lxml')
+            script = soup.find('script', id='__NEXT_DATA__')
+            if not script:
+                logger.warning(f"링커리어 페이지 {page}: __NEXT_DATA__ 태그를 찾을 수 없습니다.")
+                break
+                
+            data = json.loads(script.string)
+            apollo = data.get("props", {}).get("pageProps", {}).get("__APOLLO_STATE__", {})
+            
+            items_found = False
+            for key, value in apollo.items():
+                if key.startswith("Activity:"):
+                    items_found = True
                     try:
-                        title_el = item.query_selector('h3, .title')
-                        if not title_el:
+                        act_id = value.get("id")
+                        title = value.get("title", "").strip()
+                        if not title:
                             continue
-                        title = title_el.inner_text().strip()
-
-                        link_el = item.query_selector('a')
-                        href = link_el.get_attribute('href') if link_el else ''
-                        detail_url = f'https://linkareer.com{href}' if href.startswith('/') else href
-
-                        img_el = item.query_selector('img')
-                        thumbnail_url = img_el.get_attribute('src') if img_el else None
-
-                        date_el = item.query_selector('.deadline, .date')
+                            
+                        detail_url = f"https://linkareer.com/activity/{act_id}"
+                        
+                        # 주최기관
+                        organizer = value.get("organizationName", "").strip()
+                        
+                        # 썸네일
+                        thumb = value.get("thumbnailImage")
+                        thumbnail_url = None
+                        if thumb and isinstance(thumb, dict):
+                            file_key = thumb.get("__ref")
+                            if file_key in apollo:
+                                thumbnail_url = apollo[file_key].get("url", "")
+                        
+                        # 마감일 (recruitCloseAt 밀리초 타임스탬프)
+                        recruit_close = value.get("recruitCloseAt")
                         end_date = None
-                        if date_el:
-                            match = re.search(r'(\d{4})[.\-](\d{2})[.\-](\d{2})', date_el.inner_text())
-                            if match:
-                                end_date = f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
-
-                        if not end_date or not detail_url:
+                        if recruit_close:
+                            dt = datetime.fromtimestamp(recruit_close / 1000.0)
+                            end_date = dt.strftime("%Y-%m-%d")
+                            
+                        if not end_date:
                             continue
-
-                        cat_el = item.query_selector('.category, .tag')
-                        category = cat_el.inner_text().strip() if cat_el else ''
-
+                            
+                        # 카테고리
+                        category = value.get("category", "")
+                        
                         contest = {
                             'title': title,
+                            'organizer': organizer,
                             'field': map_field(title, category),
                             'end_date': end_date,
                             'url': detail_url,
@@ -334,20 +381,22 @@ def crawl_linkareer():
                             'source': 'linkareer',
                             'last_crawled_at': datetime.utcnow().isoformat(),
                         }
-
+                        
                         if upsert_contest(contest):
                             count += 1
-
-                    except Exception as e:
-                        logger.warning(f"항목 파싱 오류: {e}")
-
-                time.sleep(2)
-
+                            
+                    except Exception as item_e:
+                        logger.warning(f"항목 파싱 오류: {item_e}")
+            
+            if not items_found:
+                logger.info(f"링커리어 페이지 {page}: 더 이상 항목이 없습니다.")
+                break
+                
+            time.sleep(1)
+            
         except Exception as e:
-            logger.error(f"링커리어 크롤링 오류: {e}")
-        finally:
-            browser.close()
-
+            logger.error(f"링커리어 페이지 {page} 오류: {e}")
+            
     logger.info(f"링커리어: {count}건 처리 완료")
 
 

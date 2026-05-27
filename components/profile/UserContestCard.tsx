@@ -32,7 +32,7 @@ export default function UserContestCard({ profile, onMatchRequest, onReport }: U
         {/* Intro */}
         {profile.intro && (
           <div className="text-sm text-gray-300 bg-surface-elevated/50 p-3 rounded-lg border border-surface-border/50">
-            "{profile.intro}"
+            &ldquo;{profile.intro}&rdquo;
           </div>
         )}
 

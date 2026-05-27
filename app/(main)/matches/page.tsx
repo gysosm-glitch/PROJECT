@@ -181,7 +181,7 @@ export default function MatchesPage() {
 
                   <div className="bg-surface-elevated/50 p-4 rounded-xl border border-surface-border">
                     <p className="text-sm text-gray-300 mb-2 whitespace-pre-wrap">
-                      "{match.message}"
+                      &ldquo;{match.message}&rdquo;
                     </p>
                     <p className="text-xs text-gray-500 flex items-center gap-1.5">
                       <span>보낸 사람:</span>

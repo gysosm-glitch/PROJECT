@@ -39,7 +39,7 @@ export default function UserSportsCard({ profile, onMatchRequest, onReport }: Us
         {/* Intro */}
         {profile.intro && (
           <div className="text-sm text-gray-300 bg-surface-elevated/50 p-3 rounded-lg border border-surface-border/50">
-            "{profile.intro}"
+            &ldquo;{profile.intro}&rdquo;
           </div>
         )}
 

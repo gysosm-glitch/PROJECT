@@ -46,9 +46,11 @@ export default function ContestPage() {
 
   // Initial load & filter change
   useEffect(() => {
-    setLoading(true)
-    setPage(0)
-    setHasMore(true)
+    Promise.resolve().then(() => {
+      setLoading(true)
+      setPage(0)
+      setHasMore(true)
+    })
     fetchContests(0, activeField, search).then((data) => {
       setContests(data)
       setHasMore(data.length === PAGE_SIZE)

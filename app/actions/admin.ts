@@ -10,7 +10,8 @@ export async function resolveReport(reportId: string, action: 'ban' | 'dismiss',
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   
-  const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
+  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
+  const userData = data as { role?: string } | null
   if (userData?.role !== 'admin') return { error: 'Forbidden' }
 
   try {
@@ -42,7 +43,8 @@ export async function unbanUser(userId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   
-  const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
+  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
+  const userData = data as { role?: string } | null
   if (userData?.role !== 'admin') return { error: 'Forbidden' }
 
   try {

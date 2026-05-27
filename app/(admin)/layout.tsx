@@ -13,11 +13,13 @@ export default async function AdminLayout({
     redirect('/')
   }
   
-  const { data: userData } = await supabase
+  const { data } = await supabase
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single()
+  
+  const userData = data as { role?: string } | null
     
   if (userData?.role !== 'admin') {
     redirect('/')

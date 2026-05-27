@@ -14,9 +14,9 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: any[]) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
+            cookiesToSet.forEach(({ name, value, options }: any) =>
               cookieStore.set(name, value, options)
             )
           } catch {
@@ -25,13 +25,13 @@ export async function createClient() {
         },
       },
     }
-  )
+  ) as any
 }
 
 // Admin client using service key (for API routes / crawlers)
 export function createAdminClient() {
   const { createClient } = require('@supabase/supabase-js')
-  return createClient<Database>(
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_KEY!,
     {
@@ -40,5 +40,5 @@ export function createAdminClient() {
         persistSession: false,
       },
     }
-  )
+  ) as any
 }

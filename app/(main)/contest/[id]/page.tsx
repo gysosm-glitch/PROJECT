@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { CONTEST_FIELD_LABELS } from '@/types/database'
+import { CONTEST_FIELD_LABELS, ContestField } from '@/types/database'
 import { Calendar, Building2, ExternalLink, Trophy, Users, ArrowLeft } from 'lucide-react'
 import MatchUserList from './MatchUserList'
 
@@ -53,9 +53,9 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
               </div>
             )}
             <div className="absolute top-4 left-4">
-              <span className="badge-primary shadow-lg backdrop-blur-md">
-                {CONTEST_FIELD_LABELS[contest.field]}
-              </span>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-400">
+                  {CONTEST_FIELD_LABELS[contest.field as ContestField] || '기타'}
+                </span>
             </div>
           </div>
 
@@ -123,7 +123,7 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
           <h2 className="text-2xl font-bold text-white">함께할 팀원 찾기</h2>
         </div>
         <p className="text-gray-400 mb-6">
-          이 공모전 분야({CONTEST_FIELD_LABELS[contest.field]})에 관심 있는 학우들입니다.
+          이 공모전 분야({CONTEST_FIELD_LABELS[contest.field as ContestField] || '기타'})에 관심 있는 학우들입니다.
         </p>
 
         {/* Client component for match users list */}

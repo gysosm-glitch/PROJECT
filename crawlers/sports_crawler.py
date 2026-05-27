@@ -87,7 +87,7 @@ def get_schedule(facility_type: str, code: str, target_date: str) -> list[dict]:
     headers = {
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'Accept-Language': 'ko-KR,ko;q=0.9',
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'Origin': BASE_URL,
         'Referer': f'{BASE_URL}index.php?mid=cbnu_facilities3_1&act=dispFacilityView&code={code}',
         'X-Requested-With': 'XMLHttpRequest',

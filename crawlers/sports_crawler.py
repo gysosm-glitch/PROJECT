@@ -78,7 +78,14 @@ def login() -> bool:
         logger.error(f"로그인 실패: status={resp.status_code}")
         return False
     except Exception as e:
-        logger.error(f"로그인 오류: {e}")
+        logger.error(f"로그인 네트워크 오류 (학교 방화벽 차단 가능성 매우 높음): {e}")
+        import socket
+        try:
+            host = "sports.cbnu.ac.kr"
+            ip = socket.gethostbyname(host)
+            logger.info(f"DNS 조회 성공: {host} -> {ip} (서버는 존재하나 포트가 막혔을 수 있습니다.)")
+        except Exception as dns_e:
+            logger.error(f"DNS 조회 실패 (네트워크 연결이 끊겼거나 DNS가 유효하지 않습니다): {dns_e}")
         return False
 
 

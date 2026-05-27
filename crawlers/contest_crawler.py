@@ -81,8 +81,33 @@ def map_field(title: str, category: str = '') -> str:
                 return field
     return 'academic'  # 기본값
 
+def is_target_region(contest: dict) -> bool:
+    """공모전이 대전, 세종, 충청 지역에 해당되는지 판별"""
+    title = contest.get('title', '')
+    organizer = contest.get('organizer', '') or ''
+    category = contest.get('field', '') or ''
+    
+    text = f"{title} {organizer} {category}".lower()
+    
+    # 충청 대전 세종 지역 및 대학교/지자체 키워드
+    target_keywords = [
+        '대전', '세종', '충남', '충청남도', '충북', '충청북도', '충청', 
+        '청주', '충주', '천안', '아산', '공주', '제천', '음성', '진천', '괴산', '증평', '보은', '옥천', '영동', '단양', 
+        '홍성', '예산', '태안', '당진', '서산', '보령', '서천', '부여', '논산', '계룡', '금산',
+        '충북대', '충남대', '한밭대', '목원대', '배재대', '대전대', '우송대', '서원대', '청주대', '교원대', '교대', 'cbnu'
+    ]
+    
+    for kw in target_keywords:
+        if kw in text:
+            return True
+    return False
+
 def upsert_contest(contest: dict) -> bool:
-    """Supabase에 공모전 upsert (URL 기준 중복 방지)"""
+    """Supabase에 공모전 upsert (지역 필터링 적용 및 URL 기준 중복 방지)"""
+    if not is_target_region(contest):
+        logger.info(f"지역 필터링 스킵: {contest.get('title', '')[:45]}...")
+        return False
+        
     try:
         supabase_upsert('contests', contest, on_conflict='url')
         return True

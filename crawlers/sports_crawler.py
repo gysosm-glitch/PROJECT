@@ -90,7 +90,7 @@ def login() -> bool:
 
 
 def get_schedule(facility_type: str, code: str, target_date: str) -> list[dict]:
-    """특정 날짜의 예약 스케줄 조회"""
+    """특정 날짜의 예약 스케줄 조회 (신규 API 포맷 파싱 지원)"""
     headers = {
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'Accept-Language': 'ko-KR,ko;q=0.9',
@@ -112,59 +112,76 @@ def get_schedule(facility_type: str, code: str, target_date: str) -> list[dict]:
         data = resp.json()
 
         slots = []
-        # API 응답 파싱 (rentitem_info 구조 기반)
-        schedule_data = data.get('rentitem_info', data)
-
-        if isinstance(schedule_data, dict):
-            # 시간대별 슬롯 파싱
-            for key, value in schedule_data.items():
-                if isinstance(value, dict) and 'start_time' in value:
-                    start_time = value.get('start_time', '')
-                    end_time = value.get('end_time', '')
-                    status_raw = value.get('status', 'available')
-
-                    # 상태 정규화
-                    if status_raw in ['reserved', '예약완료', '1']:
-                        status = 'reserved'
-                    elif status_raw in ['closed', '마감', '불가']:
-                        status = 'closed'
-                    else:
-                        status = 'available'
-
-                    if start_time and end_time:
-                        slots.append({
-                            'facility': facility_type,
-                            'reservation_date': target_date[:4] + '-' + target_date[4:6] + '-' + target_date[6:],
-                            'start_time': start_time,
-                            'end_time': end_time,
-                            'status': status,
-                            'last_crawled_at': datetime.utcnow().isoformat(),
-                        })
-
-        elif isinstance(schedule_data, list):
-            for item in schedule_data:
-                start_time = item.get('start_time') or item.get('stime', '')
-                end_time = item.get('end_time') or item.get('etime', '')
-                status_raw = item.get('status', 'available')
-
-                if status_raw in ['reserved', '예약완료', '1']:
-                    status = 'reserved'
-                elif status_raw in ['closed', '마감', '불가']:
-                    status = 'closed'
+        
+        # 신규 API 날짜 키 매핑: 예: "day_2026-05-29"
+        formatted_date = f"{target_date[:4]}-{target_date[4:6]}-{target_date[6:]}"
+        date_key = f"day_{formatted_date}"
+        
+        day_items = data.get(date_key)
+        if day_items and isinstance(day_items, list):
+            for item in day_items:
+                time_s = item.get('time_s', '') # 예: "07:00"
+                time_e = item.get('time_e', '') # 예: "18:00"
+                unavailable = item.get('unavailable', [])
+                msg = item.get('msg', '')
+                
+                # 예약 불가 여부 판단
+                is_closed = False
+                if "예약가능한 날짜가 아닙니다" in msg or not time_s or not time_e:
+                    is_closed = True
+                    
+                if time_s and time_e:
+                    try:
+                        start_hour = int(time_s.split(":")[0])
+                        end_hour = int(time_e.split(":")[0])
+                        
+                        for h in range(start_hour, end_hour):
+                            slot_start = f"{h:02d}:00"
+                            slot_end = f"{h+1:02d}:00"
+                            
+                            if is_closed:
+                                status = 'closed'
+                            else:
+                                # unavailable 목록에 해당 시간대(예: "08-00:2")가 있는지 체크
+                                is_unavailable = False
+                                for unav in unavailable:
+                                    if unav.startswith(f"{h:02d}-00") or unav.startswith(f"{h:02d}:00"):
+                                        is_unavailable = True
+                                        break
+                                status = 'reserved' if is_unavailable else 'available'
+                                
+                            slots.append({
+                                'facility': facility_type,
+                                'reservation_date': formatted_date,
+                                'start_time': slot_start,
+                                'end_time': slot_end,
+                                'status': status,
+                                'last_crawled_at': datetime.utcnow().isoformat(),
+                            })
+                    except Exception as parse_e:
+                        logger.error(f"시간 파싱 오류 ({facility_type}, {target_date}): {parse_e}")
+                        
+        # 중복 슬롯 제거 및 병합 (예: 풋살장 A코트, B코트가 동시에 존재할 때 하나의 시설 상태로 병합)
+        deduped_slots = {}
+        for slot in slots:
+            key = (slot['facility'], slot['reservation_date'], slot['start_time'])
+            if key not in deduped_slots:
+                deduped_slots[key] = slot
+            else:
+                existing_status = deduped_slots[key]['status']
+                new_status = slot['status']
+                
+                # 병합 규칙: 하나라도 'available'이면 예약 가능, 둘 다 reserved이면 reserved, 그 외엔 closed
+                if existing_status == 'available' or new_status == 'available':
+                    merged_status = 'available'
+                elif existing_status == 'reserved' or new_status == 'reserved':
+                    merged_status = 'reserved'
                 else:
-                    status = 'available'
-
-                if start_time and end_time:
-                    slots.append({
-                        'facility': facility_type,
-                        'reservation_date': target_date[:4] + '-' + target_date[4:6] + '-' + target_date[6:],
-                        'start_time': start_time,
-                        'end_time': end_time,
-                        'status': status,
-                        'last_crawled_at': datetime.utcnow().isoformat(),
-                    })
-
-        return slots
+                    merged_status = 'closed'
+                    
+                deduped_slots[key]['status'] = merged_status
+                
+        return list(deduped_slots.values())
 
     except Exception as e:
         logger.error(f"get_schedule 오류 ({facility_type}, {target_date}): {e}")

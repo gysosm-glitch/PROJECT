@@ -4,14 +4,18 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Users, ShieldCheck, UserCheck, XCircle } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
-import { useAuth } from '@/hooks/useAuth'
+import { createClient } from '@/lib/supabase/client'
 
 export default function RecruitmentRoomDetail() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
-  
+  const supabase = createClient()
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data?.user))
+  }, [supabase])
+
   const [room, setRoom] = useState<any>(null)
   const [hostProfile, setHostProfile] = useState<any>(null)
   const [applications, setApplications] = useState<any[]>([])

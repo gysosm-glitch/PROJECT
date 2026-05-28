@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { Users, Clock } from 'lucide-react'
 
 interface RoomListProps {
@@ -11,6 +11,7 @@ interface RoomListProps {
 }
 
 export default function RoomList({ type, relationId }: RoomListProps) {
+  const supabase = createClient()
   const [rooms, setRooms] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 

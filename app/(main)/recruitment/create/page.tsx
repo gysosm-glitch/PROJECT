@@ -4,20 +4,24 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Trophy, Dumbbell } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import {
   CONTEST_FIELD_LABELS,
   FACILITY_LABELS,
   type FacilityType,
 } from '@/types/database'
-import { useAuth } from '@/hooks/useAuth'
 
 type RoomType = 'contest' | 'sports'
 
 export default function CreateRecruitmentRoom() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user } = useAuth()
+  const supabase = createClient()
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data?.user))
+  }, [supabase])
 
   // Form state
   const [roomType, setRoomType] = useState<RoomType | null>(null)

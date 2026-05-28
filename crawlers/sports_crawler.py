@@ -113,42 +113,46 @@ def login() -> bool:
         return False
 
 
-def get_schedule(facility_type: str, code: str, target_date: str) -> list[dict]:
+def get_schedule(facility_type: str, code: str, target_date: str,
+                 api_cache: dict | None = None) -> list[dict]:
     """
-    특정 날짜의 예약 스케줄 조회 (코트별 분리 지원)
-    
-    - 풋살A/B, 농구A/B, 테니스A~E는 COURT_INDEX 딕셔너리를 통해 인덱스 기반으로 구분
-    - API 응답의 unavailable 리스트 형식: ["HH-MM:코트인덱스", ...]
-      예) "08-00:0" = 0번 코트(A코트) 08:00 예약됨, "08-00:1" = 1번 코트(B코트) 예약됨
-    - 날짜 자체가 예약 불가인 경우 (학교 정책 상 오픈 전)는 슬롯을 생성하지 않음
+    특정 날짜의 예약 스케줄 조회 (코트별 분리 지원, API 응답 캐싱)
+
+    api_cache: {(code, target_date): raw_data} 형태의 딕셔너리.
+      동일 (code, date)는 한 번만 API 호출하고 캐시 재사용.
+      풋살A/B, 농구A/B, 테니스A~E가 같은 코드를 공유하므로 호출 횟수 대폭 감소.
     """
     court_idx = COURT_INDEX.get(facility_type)
-    headers = {
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Accept-Language': 'ko-KR,ko;q=0.9',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Origin': BASE_URL,
-        'Referer': f'{BASE_URL}index.php?mid=cbnu_facilities3_1&act=dispFacilityView&code={code}',
-        'X-Requested-With': 'XMLHttpRequest',
-    }
-    payload = f'code={code}&days={target_date}&module=its&act=get_schedule'
+    formatted_date = f"{target_date[:4]}-{target_date[4:6]}-{target_date[6:]}"
+    date_key = f"day_{formatted_date}"
+    cache_key = (code, target_date)
+
+    # 캐시 확인: 이미 같은 (code, date)로 호출한 적 있으면 재사용
+    if api_cache is not None and cache_key in api_cache:
+        data = api_cache[cache_key]
+        logger.debug(f"  {facility_type} {target_date}: 캐시 히트")
+    else:
+        headers = {
+            'Accept': 'application/json, text/javascript, */*; q=0.01',
+            'Accept-Language': 'ko-KR,ko;q=0.9',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': BASE_URL,
+            'Referer': f'{BASE_URL}index.php?mid=cbnu_facilities3_1&act=dispFacilityView&code={code}',
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+        payload = f'code={code}&days={target_date}&module=its&act=get_schedule'
+
+        try:
+            resp = SESSION.post(BASE_URL, data=payload, headers=headers, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+            if api_cache is not None:
+                api_cache[cache_key] = data
+        except Exception as e:
+            logger.error(f"get_schedule API 오류 ({facility_type}, {target_date}): {e}")
+            return []
 
     try:
-        resp = SESSION.post(
-            BASE_URL,
-            data=payload,
-            headers=headers,
-            timeout=15
-        )
-        resp.raise_for_status()
-        data = resp.json()
-
-        slots = []
-
-        # 신규 API 날짜 키 매핑: 예: "day_2026-05-29"
-        formatted_date = f"{target_date[:4]}-{target_date[4:6]}-{target_date[6:]}"
-        date_key = f"day_{formatted_date}"
-
         day_items = data.get(date_key)
         if not day_items or not isinstance(day_items, list):
             logger.debug(f"  {facility_type} {target_date}: 응답 데이터 없음 (예약 미오픈 날짜일 가능성)")
@@ -213,7 +217,7 @@ def get_schedule(facility_type: str, code: str, target_date: str) -> list[dict]:
         return slots
 
     except Exception as e:
-        logger.error(f"get_schedule 오류 ({facility_type}, {target_date}): {e}")
+        logger.error(f"get_schedule 파싱 오류 ({facility_type}, {target_date}): {e}")
         return []
 
 
@@ -231,34 +235,44 @@ def upsert_slots(slots: list[dict]) -> int:
 
 def crawl_all():
     """
-    전체 시설 × 오늘~7일 크롤링
-    
-    - 코트별로 분리된 FACILITIES를 순회 (풋살A/B, 농구A/B, 테니스A~E 각각)
-    - 학교 예약 시스템에서 아직 오픈하지 않은 날짜는 슬롯을 생성하지 않으므로
-      실제 6~7일차 데이터는 학교 정책에 따라 자동으로 추가됨
-    - 동일 API 코드를 여러 코트가 공유하는 경우, API 호출 결과를 캐싱해
-      불필요한 중복 요청을 방지함
+    전체 시설 × 오늘~7일 크롤링 (API 응답 캐싱으로 중복 호출 제거)
+
+    호출 횟수 최적화:
+      풋살A/B, 농구A/B, 테니스A~E는 같은 API 코드를 공유.
+      api_cache를 통해 (code, date) 단위로 캐싱하면
+      77번 → 35번으로 호출 수가 절반 이상 줄어 소요 시간 대폭 단축.
     """
     if not login():
         logger.error("로그인 실패로 크롤링 중단")
         return
 
     today = date.today()
-    # 오늘 포함 7일치 (오늘 ~ D+6)
     dates = [(today + timedelta(days=i)).strftime('%Y%m%d') for i in range(7)]
     logger.info(f"크롤링 대상 날짜: {dates[0]} ~ {dates[-1]} (7일치)")
 
+    api_cache: dict = {}  # {(code, date): raw_json} - 중복 API 호출 방지
     total = 0
+    seen_codes: set = set()  # 이미 호출한 (code, date) 추적용 (로깅)
+
     for facility_type, code in FACILITIES.items():
         logger.info(f"--- {facility_type} 크롤링 시작 ---")
         for d in dates:
-            slots = get_schedule(facility_type, code, d)
+            cache_key = (code, d)
+            is_cache_hit = cache_key in api_cache
+
+            slots = get_schedule(facility_type, code, d, api_cache)
             count = upsert_slots(slots)
             total += count
-            logger.info(f"  {d}: {count}슬롯 저장 (예약 미오픈 날짜는 0슬롯)")
-            time.sleep(0.3)  # Rate limiting (코트 수 증가로 약간 간격 줄임)
 
-    logger.info(f"총 {total}개 슬롯 처리 완료")
+            if is_cache_hit:
+                logger.info(f"  {d}: {count}슬롯 저장 [캐시 사용]")
+            else:
+                logger.info(f"  {d}: {count}슬롯 저장 [API 호출]")
+                seen_codes.add(cache_key)
+                time.sleep(0.3)  # 실제 API 호출 시에만 rate limiting
+
+    unique_calls = len(seen_codes)
+    logger.info(f"총 {total}개 슬롯 처리 완료 (실제 API 호출: {unique_calls}회)")
 
 
 if __name__ == '__main__':

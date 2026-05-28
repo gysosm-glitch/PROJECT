@@ -8,9 +8,11 @@ import { Users, Clock } from 'lucide-react'
 interface RoomListProps {
   type: 'contest' | 'sports'
   relationId?: string // contest_id or something
+  sportsFacility?: string
+  sportsDate?: string
 }
 
-export default function RoomList({ type, relationId }: RoomListProps) {
+export default function RoomList({ type, relationId, sportsFacility, sportsDate }: RoomListProps) {
   const supabase = createClient()
   const [rooms, setRooms] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,13 +34,18 @@ export default function RoomList({ type, relationId }: RoomListProps) {
         query = query.eq('contest_id', relationId)
       }
 
+      if (type === 'sports') {
+        if (sportsFacility) query = query.eq('sports_facility', sportsFacility)
+        if (sportsDate) query = query.eq('sports_date', sportsDate)
+      }
+
       const { data } = await query
       setRooms(data || [])
       setLoading(false)
     }
 
     fetchRooms()
-  }, [type, relationId])
+  }, [type, relationId, sportsFacility, sportsDate])
 
   if (loading) return <div className="text-center py-8 text-slate-500">불러오는 중...</div>
   

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { FacilityType, FACILITY_LABELS } from '@/types/database'
 import { ArrowLeft, MapPin, Calendar, Clock, Users } from 'lucide-react'
-import MatchSportsUserList from './MatchSportsUserList'
+import RoomList from '@/components/room/RoomList'
 
 interface SportsMatchPageProps {
   searchParams: Promise<{
@@ -88,15 +88,23 @@ export default async function SportsMatchPage({ searchParams }: SportsMatchPageP
       </div>
 
       <div>
-        <p className="text-gray-400 mb-6">
-          해당 종목에 관심 있는 학우들입니다. 매칭을 신청해 함께 운동해보세요!
-        </p>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-gray-400">
+            해당 시간에 개설된 스포츠 매칭 방입니다. 함께 운동할 팀원을 구해보세요!
+          </p>
+          <Link
+            href={`/recruitment/create?type=sports&facility=${resolvedParams.facility}&date=${resolvedParams.date}&startTime=${startTime}&endTime=${endTime}`}
+            className="btn-primary"
+          >
+            팀원 모집 개설하기
+          </Link>
+        </div>
 
-        {/* Client component for users list */}
-        <MatchSportsUserList
-          facility={resolvedParams.facility}
-          reservationId={resolvedParams.reservationId}
-          currentUserId={user?.id}
+        {/* Client component for room list */}
+        <RoomList
+          type="sports"
+          sportsFacility={resolvedParams.facility}
+          sportsDate={resolvedParams.date}
         />
       </div>
     </div>

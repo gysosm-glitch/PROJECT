@@ -71,6 +71,11 @@ function CreateRecruitmentRoomContent() {
     const typeParam = searchParams.get('type')
     const contestIdParam = searchParams.get('contestId')
     
+    const facilityParam = searchParams.get('facility') as FacilityType
+    const dateParam = searchParams.get('date')
+    const startTimeParam = searchParams.get('startTime')
+    const endTimeParam = searchParams.get('endTime')
+    
     if (typeParam === 'contest') {
       setRoomType('contest')
       setStep(2)
@@ -78,6 +83,11 @@ function CreateRecruitmentRoomContent() {
     } else if (typeParam === 'sports') {
       setRoomType('sports')
       setStep(2)
+      
+      if (facilityParam) setSelectedFacility(facilityParam)
+      if (dateParam) setSelectedDate(dateParam)
+      if (startTimeParam) setSelectedStartTime(startTimeParam)
+      if (endTimeParam) setSelectedEndTime(endTimeParam)
     }
   }, [searchParams])
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Contest, ContestField } from '@/types/database'
+import { Contest, ContestField, ContestRegion } from '@/types/database'
 import ContestCard from '@/components/contest/ContestCard'
 import ContestFilter from '@/components/contest/ContestFilter'
 import ContestProfileModal from '@/components/profile/ContestProfileModal'
@@ -17,6 +17,7 @@ export default function ContestPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [activeField, setActiveField] = useState<ContestField | 'all'>('all')
+  const [activeRegion, setActiveRegion] = useState<ContestRegion | 'all'>('all')
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -24,7 +25,7 @@ export default function ContestPage() {
   const observerRef = useRef<IntersectionObserver | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
-  const fetchContests = useCallback(async (pageNum: number, field: ContestField | 'all', q: string) => {
+  const fetchContests = useCallback(async (pageNum: number, field: ContestField | 'all', region: ContestRegion | 'all', q: string) => {
     const from = pageNum * PAGE_SIZE
     let query = supabase
       .from('contests')
@@ -34,6 +35,7 @@ export default function ContestPage() {
       .range(from, from + PAGE_SIZE - 1)
 
     if (field !== 'all') query = query.eq('field', field)
+    if (region !== 'all') query = query.eq('region', region)
     if (q) query = query.ilike('title', `%${q}%`)
 
     const { data, error } = await query
@@ -51,12 +53,12 @@ export default function ContestPage() {
       setPage(0)
       setHasMore(true)
     })
-    fetchContests(0, activeField, search).then((data) => {
+    fetchContests(0, activeField, activeRegion, search).then((data) => {
       setContests(data)
       setHasMore(data.length === PAGE_SIZE)
       setLoading(false)
     })
-  }, [activeField, search, fetchContests])
+  }, [activeField, activeRegion, search, fetchContests])
 
   // Infinite scroll
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function ContestPage() {
       if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
         const nextPage = page + 1
         setLoadingMore(true)
-        fetchContests(nextPage, activeField, search).then((data) => {
+        fetchContests(nextPage, activeField, activeRegion, search).then((data) => {
           setContests((prev) => [...prev, ...data])
           setHasMore(data.length === PAGE_SIZE)
           setPage(nextPage)
@@ -75,7 +77,7 @@ export default function ContestPage() {
     })
     if (sentinelRef.current) observerRef.current.observe(sentinelRef.current)
     return () => observerRef.current?.disconnect()
-  }, [hasMore, loadingMore, loading, page, activeField, search, fetchContests])
+  }, [hasMore, loadingMore, loading, page, activeField, activeRegion, search, fetchContests])
 
   // Search debounce
   useEffect(() => {
@@ -118,7 +120,14 @@ export default function ContestPage() {
       </div>
 
       {/* Filter */}
-      <ContestFilter activeField={activeField} onChange={(f) => setActiveField(f)} />
+      <ContestFilter
+        activeField={activeField}
+        activeRegion={activeRegion}
+        onChange={(f, r) => {
+          if (f !== undefined) setActiveField(f)
+          if (r !== undefined) setActiveRegion(r)
+        }}
+      />
 
       {/* Grid */}
       {loading ? (

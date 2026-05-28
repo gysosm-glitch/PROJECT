@@ -97,6 +97,8 @@ export type Database = {
           title: string
           organizer: string | null
           field: ContestField
+          region: ContestRegion | null
+          max_participants: number | null
           start_date: string | null
           end_date: string
           prize: string | null
@@ -113,6 +115,8 @@ export type Database = {
           title: string
           organizer?: string | null
           field: ContestField
+          region?: ContestRegion | null
+          max_participants?: number | null
           start_date?: string | null
           end_date: string
           prize?: string | null
@@ -225,6 +229,8 @@ export type ContestField =
   | 'arts'
   | 'academic'
 
+export type ContestRegion = '충청북도' | '충청남도' | '세종특별자치시' | '대전광역시'
+
 export type FacilityType =
   | 'futsal_a' | 'futsal_b'
   | 'basketball_a' | 'basketball_b'
@@ -263,6 +269,20 @@ export const CONTEST_FIELD_LABELS: Record<ContestField, string> = {
   it: 'IT·소프트웨어',
   arts: '예체능·음악·미술',
   academic: '학술·창업·논술',
+}
+
+export const CONTEST_REGION_LABELS: Record<ContestRegion, string> = {
+  '충청북도': '충청북도',
+  '충청남도': '충청남도',
+  '세종특별자치시': '세종',
+  '대전광역시': '대전',
+}
+
+export const CONTEST_REGION_EMOJIS: Record<ContestRegion, string> = {
+  '충청북도': '🏔️',
+  '충청남도': '🌊',
+  '세종특별자치시': '🏛️',
+  '대전광역시': '⚗️',
 }
 
 export const FACILITY_LABELS: Record<FacilityType, string> = {

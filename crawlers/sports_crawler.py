@@ -45,20 +45,18 @@ FACILITIES = {
     'main_field':    'k8SXwWKYYsNokZnEbsNsxGSQkpCTlG2Xkmpv',  # 종합운동장
     'small_field':   'lcSWwWiYacNmkZfEbsNsxGyQlJCTlG2Xkmpv',  # 소운동장
     'futsal_a':      'lMSUwWWYZcNpkZTEZ8NtxGSQmZCTlG2Xkmpv',  # 풋살장 A코트
-    'futsal_b':      'lMSUwWWYZcNpkZTEZ8NtxGSQmZCTlG2Xkmpv',  # 풋살장 B코트 (동일 API, court_index=1)
+    'futsal_b':      'lMSUwWWYZcNpkZTEZ8NtxGSQmZCTlG2Xkmpv',  # 풋살장 B코트
     'basketball_a':  'mcSVwWaYZ8NkkZLEbMNwxGiQk5CTlG2Xkmpv',  # 농구장 A코트
-    'basketball_b':  'mcSVwWaYZ8NkkZLEbMNwxGiQk5CTlG2Xkmpv',  # 농구장 B코트 (동일 API, court_index=1)
+    'basketball_b':  'mcSVwWaYZ8NkkZLEbMNwxGiQk5CTlG2Xkmpv',  # 농구장 B코트
     'tennis_a':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 A코트
-    'tennis_b':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 B코트 (court_index=1)
-    'tennis_c':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 C코트 (court_index=2)
-    'tennis_d':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 D코트 (court_index=3)
-    'tennis_e':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 E코트 (court_index=4)
+    'tennis_b':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 B코트
+    'tennis_c':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 C코트 (실제 존재 확인)
 }
 
 # 코트 인덱스 매핑: 동일 API에서 코트별 unavailable 항목을 구분하는 인덱스
 # API 응답의 unavailable 리스트에서 ":코트인덱스" 형태로 구분됨
 COURT_INDEX = {
-    'main_field':   None,  # 단일 시설, 인덱스 불필요
+    'main_field':   None,
     'small_field':  None,
     'futsal_a':     0,
     'futsal_b':     1,
@@ -67,8 +65,6 @@ COURT_INDEX = {
     'tennis_a':     0,
     'tennis_b':     1,
     'tennis_c':     2,
-    'tennis_d':     3,
-    'tennis_e':     4,
 }
 
 BASE_URL = 'https://sports.cbnu.ac.kr/'
@@ -173,6 +169,13 @@ def get_schedule(facility_type: str, code: str, target_date: str,
                 return []
             items_to_process = [day_items[court_idx]]
 
+        # 풋살, 농구, 테니스장은 06:00 ~ 21:50으로 시간 범위 고정 (마지막 슬롯 21:00 ~ 21:50을 위해 end_hour = 22 지정)
+        is_fixed_time_facility = facility_type in [
+            'futsal_a', 'futsal_b',
+            'basketball_a', 'basketball_b',
+            'tennis_a', 'tennis_b', 'tennis_c'
+        ]
+
         slots = []
         for item in items_to_process:
             time_s = item.get('time_s', '')   # 예: "07:00"
@@ -185,22 +188,61 @@ def get_schedule(facility_type: str, code: str, target_date: str,
                 logger.debug(f"  {facility_type} {target_date}: 예약 미오픈 날짜 - 스킵")
                 return []
 
-            if not time_s or not time_e:
+            if not is_fixed_time_facility and (not time_s or not time_e):
                 continue
 
             try:
-                start_hour = int(time_s.split(":")[0])
-                end_hour = int(time_e.split(":")[0])
+                if is_fixed_time_facility:
+                    start_hour = 6
+                    end_hour = 22
+                else:
+                    start_hour = int(time_s.split(":")[0])
+                    end_hour = int(time_e.split(":")[0])
 
                 for h in range(start_hour, end_hour):
                     slot_start = f"{h:02d}:00"
-                    slot_end = f"{h+1:02d}:00"
+                    if is_fixed_time_facility and h == 21:
+                        slot_end = "21:50"
+                    else:
+                        slot_end = f"{h+1:02d}:00"
 
-                    # unavailable 형식: "HH-MM" 또는 "HH:MM" (코트 인덱스 없음)
-                    is_unavailable = any(
-                        unav.startswith(f"{h:02d}-00") or unav.startswith(f"{h:02d}:00")
-                        for unav in unavailable
-                    )
+                    # unavailable 정밀 매칭
+                    is_unavailable = False
+                    for unav in unavailable:
+                        # 1. 코트 식별자 검증 (코트가 지정된 경우)
+                        if court_idx is not None:
+                            if ":" in unav:
+                                parts = unav.rsplit(":", 1)
+                                time_part = parts[0]
+                                court_part = parts[1]
+                                if court_part.isdigit():
+                                    if int(court_part) != (court_idx + 1):
+                                        continue  # 다른 코트의 예약 내역이므로 스킵
+                                else:
+                                    time_part = unav
+                            else:
+                                time_part = unav
+                        else:
+                            # 단일 시설의 경우, 혹시 모를 ":" 식별자 제거
+                            if ":" in unav:
+                                parts = unav.rsplit(":", 1)
+                                if parts[1].isdigit():
+                                    time_part = parts[0]
+                                else:
+                                    time_part = unav
+                            else:
+                                time_part = unav
+
+                        # 2. 시간 매칭 검증 (1자리 시간대도 매칭되도록 '-'/':' 분할 파싱)
+                        time_part_clean = time_part.replace(":", "-")
+                        if "-" in time_part_clean:
+                            try:
+                                unav_hour = int(time_part_clean.split("-")[0])
+                                if unav_hour == h:
+                                    is_unavailable = True
+                                    break
+                            except ValueError:
+                                pass
 
                     slots.append({
                         'facility': facility_type,

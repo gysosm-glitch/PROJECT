@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Trophy, Dumbbell, Bell, User, LogOut, Menu, X } from 'lucide-react'
+import { Trophy, Dumbbell, Bell, User, LogOut, Menu, X, MessageCircle } from 'lucide-react'
 
 export default function Navbar() {
   const router = useRouter()
@@ -62,6 +62,7 @@ export default function Navbar() {
   const navLinks = [
     { href: '/contest', label: '공모전', icon: Trophy },
     { href: '/sports', label: '스포츠', icon: Dumbbell },
+    { href: '/messages', label: '메시지', icon: MessageCircle },
   ]
 
   return (

@@ -1,8 +1,7 @@
 # PRD: 충북대학교 공모전 & 스포츠 매칭 플랫폼
 
-> **버전:** v1.0
-> **작성일:** 2026-05-27
-> **작성자:** -
+> **버전:** v2.0
+> **작성일:** 2026-05-28
 > **기술 스택:** Next.js · Supabase · Vercel · Anthropic Claude API
 
 ---
@@ -10,12 +9,14 @@
 ## 1. 프로젝트 개요
 
 ### 1.1 서비스 한 줄 정의
-충북대학교 재학생·휴학생이 자신의 능력과 관심사를 등록하면, 공모전 팀원 또는 스포츠 파트너를 매칭받을 수 있는 캠퍼스 전용 플랫폼.
+충북대학교 재학생·휴학생이 자신의 능력과 관심사를 등록하면, 공모전 팀원 또는 스포츠 파트너를 매칭받고 소통할 수 있는 캠퍼스 전용 플랫폼.
 
 ### 1.2 핵심 가치
 - **능력 기반 매칭**: 스펙·경험을 공개해 서로가 "함께 할 만한 사람"인지 판단 가능
-- **충북대 한정**: @chungbuk.ac.kr 이메일 인증으로 신뢰도 확보
-- **실시간 데이터**: 공모전 정보·시설 예약 현황을 자동 크롤링으로 최신화
+- **충북대 한정**: @chungbuk.ac.kr 이메일 인증(또는 학번 인증)으로 신뢰도 확보
+- **실시간 데이터**: 공모전 정보 및 교내 시설 예약 현황 자동 크롤링으로 최신화
+- **신뢰 기반 생태계 (v2.0)**: 매너 평가 시스템으로 건전한 경기/협업 문화 형성
+- **실시간 커뮤니케이션 (v2.0)**: 1:1 및 공모전 그룹 채팅 연동
 
 ### 1.3 대상 사용자
 - 충북대학교 재학생 및 휴학생 (학부·대학원 무관)
@@ -28,11 +29,13 @@
 |------|------|------|
 | 프론트엔드 | Next.js 14 (App Router) | TypeScript 필수 |
 | 백엔드 | Next.js API Routes + Supabase | 서버리스 |
-| 데이터베이스 | Supabase (PostgreSQL) | RLS 정책 적용 |
+| 데이터베이스 | Supabase (PostgreSQL) | RLS 정책 적용, Realtime 내장 |
 | 인증 | Supabase Auth | 이메일 인증 방식 |
 | 배포 | Vercel | Preview / Production 환경 분리 |
+| 실시간 | Supabase Realtime | WebSocket 기반 알림/채팅 구독 |
+| 자동화 | Vercel Cron Jobs / GitHub Actions | 매일 데이터 동기화 및 만료 처리 |
 | AI | Anthropic Claude API (claude-sonnet-4) | 매칭 추천, 공모전 요약 |
-| 크롤링 | Python (BeautifulSoup / Playwright) | Vercel Cron Job 또는 GitHub Actions |
+| 크롤링 | Python (BeautifulSoup / Playwright) | 시설 예약, 공모전 스크래핑 |
 | 스타일 | Tailwind CSS | |
 
 ---
@@ -49,34 +52,22 @@
 1. 이메일 입력 → 도메인 검증 실패 시 즉시 에러 메시지 표시
 2. 비밀번호 입력 및 확인
 3. 닉네임 입력 (중복 불가, 2~10자)
-4. 학번 입력 (10자리 숫자, 형식 검증만 - 실재 여부 검증 불가)
+4. 학번 입력 (10자리 숫자, 형식 검증만)
 5. Supabase Auth로 계정 생성 → 인증 메일 발송
 6. 이메일 내 링크 클릭 → 인증 완료 → `users` 테이블에 프로필 레코드 생성
 7. 인증 완료 후 메인 페이지로 리다이렉트
 
-**에러 처리**
-- 이미 가입된 이메일: "이미 사용 중인 이메일입니다"
-- 도메인 불일치: "충북대학교 이메일(@chungbuk.ac.kr)만 가입 가능합니다"
-- 인증 메일 미클릭 상태로 로그인 시도: "이메일 인증을 완료해주세요"
-
-### 3.2 로그인
+### 3.2 로그인 및 회원탈퇴
 
 - 이메일 + 비밀번호 로그인
-- "로그인 상태 유지" 체크박스 (세션 만료 7일 vs 브라우저 종료 시)
-- 비밀번호 찾기: 등록된 충북대 이메일로 재설정 링크 발송
-
-### 3.3 회원탈퇴
-
-- 설정 > 계정 > 회원탈퇴
-- 탈퇴 시 작성한 매칭 프로필 비공개 처리, 개인식별 정보 30일 후 삭제
-- 탈퇴 후 동일 이메일로 재가입 가능 (30일 유예 없음)
+- 세션 유지 기능 지원
+- 회원탈퇴 시 개인식별 정보 30일 후 삭제 (프로필 비공개 처리)
 
 ---
 
 ## 4. 데이터베이스 스키마
 
 ### 4.1 `users` (기본 회원 정보)
-
 ```sql
 CREATE TABLE users (
   id           UUID PRIMARY KEY REFERENCES auth.users(id),
@@ -86,83 +77,72 @@ CREATE TABLE users (
   avatar_url   TEXT,
   role         TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   is_active    BOOLEAN DEFAULT TRUE,
+  manner_score DECIMAL(3,2) DEFAULT 0.0,  -- v2.0 매너 점수
   created_at   TIMESTAMPTZ DEFAULT NOW(),
   updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
 ### 4.2 `contest_profiles` (공모전 매칭용 프로필)
-
 ```sql
 CREATE TABLE contest_profiles (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
-  department      TEXT NOT NULL,           -- 학과
+  department      TEXT NOT NULL,
   gender          TEXT CHECK (gender IN ('male', 'female', 'other')),
   age             INT CHECK (age BETWEEN 18 AND 40),
-  contest_count   INT DEFAULT 0,           -- 공모전 참여 횟수
-  certificates    TEXT[],                  -- 자격증 목록
-  fields          TEXT[],                  -- 관심 공모전 분야
-  intro           TEXT,                    -- 자기소개 (300자 이내)
-  is_visible      BOOLEAN DEFAULT TRUE,    -- 프로필 공개 여부
-  created_at      TIMESTAMPTZ DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ DEFAULT NOW()
+  contest_count   INT DEFAULT 0,
+  certificates    TEXT[],
+  fields          TEXT[],
+  intro           TEXT,
+  is_visible      BOOLEAN DEFAULT TRUE,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
 ### 4.3 `sports_profiles` (스포츠 매칭용 프로필)
-
 ```sql
 CREATE TABLE sports_profiles (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
   gender          TEXT CHECK (gender IN ('male', 'female', 'other')),
   age             INT CHECK (age BETWEEN 18 AND 40),
-  sports          TEXT[],                  -- 관심 종목 목록
-  career_years    INT DEFAULT 0,           -- 운동 경력 (년)
-  is_pro          BOOLEAN DEFAULT FALSE,   -- 선출 여부
-  intro           TEXT,                    -- 자기소개 (300자 이내)
+  sports          TEXT[],
+  career_years    INT DEFAULT 0,
+  is_pro          BOOLEAN DEFAULT FALSE,
+  intro           TEXT,
   is_visible      BOOLEAN DEFAULT TRUE,
-  created_at      TIMESTAMPTZ DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ DEFAULT NOW()
+  created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
-### 4.4 `contests` (공모전 정보 - 크롤링 데이터)
-
+### 4.4 `contests` (공모전 정보 - 크롤링 및 수동 데이터)
 ```sql
 CREATE TABLE contests (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title           TEXT NOT NULL,
   organizer       TEXT,
-  field           TEXT NOT NULL CHECK (field IN (
-                    'marketing', 'video', 'design',
-                    'literature', 'it', 'arts', 'academic'
-                  )),
-  start_date      DATE,
-  end_date        DATE NOT NULL,
+  field           TEXT NOT NULL,
+  region          TEXT CHECK (region IN ('충청북도', '충청남도', '세종특별자치시', '대전광역시')), -- v2.0 지역 제한
+  start_date      DATE NOT NULL,           -- v2.0 시작일 필수
+  end_date        DATE NOT NULL,           -- v2.0 마감일 필수
+  max_participants INT DEFAULT 4,          -- v2.0 최대 인원
   prize           TEXT,
-  target          TEXT,                    -- 지원 대상
-  url             TEXT UNIQUE NOT NULL,    -- 원본 링크 (중복 방지 키)
+  target          TEXT,
+  url             TEXT UNIQUE NOT NULL,
   thumbnail_url   TEXT,
-  is_active       BOOLEAN DEFAULT TRUE,    -- 마감 여부
-  source          TEXT,                    -- 크롤링 출처 사이트
+  is_active       BOOLEAN DEFAULT TRUE,
+  source          TEXT,
   last_crawled_at TIMESTAMPTZ DEFAULT NOW(),
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
 ### 4.5 `sports_reservations` (시설 예약 현황 - 크롤링 데이터)
-
 ```sql
 CREATE TABLE sports_reservations (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  facility        TEXT NOT NULL CHECK (facility IN (
-                    'futsal_a', 'futsal_b',
-                    'basketball_a', 'basketball_b',
-                    'tennis_a', 'tennis_b', 'tennis_c', 'tennis_d', 'tennis_e',
-                    'small_field', 'main_field'
-                  )),
+  facility        TEXT NOT NULL,
   reservation_date DATE NOT NULL,
   start_time      TIME NOT NULL,
   end_time        TIME NOT NULL,
@@ -172,351 +152,180 @@ CREATE TABLE sports_reservations (
 );
 ```
 
-### 4.6 `matches` (매칭 요청/성사 기록)
-
+### 4.6 `matches` 및 `applications` (매칭 요청 관리)
 ```sql
 CREATE TABLE matches (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type            TEXT NOT NULL CHECK (type IN ('contest', 'sports')),
-  requester_id    UUID REFERENCES users(id),
-  receiver_id     UUID REFERENCES users(id),
-  contest_id      UUID REFERENCES contests(id),        -- 공모전 매칭 시
-  reservation_id  UUID REFERENCES sports_reservations(id), -- 스포츠 매칭 시
-  status          TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'cancelled')),
-  message         TEXT,                                -- 신청 메시지 (200자 이내)
-  created_at      TIMESTAMPTZ DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### 4.7 `reports` (신고)
-
-```sql
-CREATE TABLE reports (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  reporter_id     UUID REFERENCES users(id),
-  reported_id     UUID REFERENCES users(id),
-  reason          TEXT NOT NULL,
-  detail          TEXT,
-  status          TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'dismissed')),
+  author_id       UUID REFERENCES users(id),
+  contest_id      UUID REFERENCES contests(id),
+  reservation_id  UUID REFERENCES sports_reservations(id),
+  title           TEXT,
+  description     TEXT,
+  status          TEXT DEFAULT '모집중' CHECK (status IN ('모집중', '마감', '매치확정', '취소됨')),
+  match_datetime  TIMESTAMPTZ, -- 경기/모임 날짜
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TABLE applications (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id        UUID REFERENCES matches(id) ON DELETE CASCADE,
+  applicant_id    UUID REFERENCES users(id),
+  status          TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+  message         TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(match_id, applicant_id)
+);
 ```
 
-### 4.8 `notifications` (알림)
-
+### 4.7 메시지 및 알림 (v2.0)
 ```sql
+CREATE TABLE message_rooms (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id        UUID REFERENCES matches(id),
+  is_group        BOOLEAN DEFAULT FALSE,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE room_members (
+  room_id         UUID REFERENCES message_rooms(id),
+  user_id         UUID REFERENCES users(id),
+  joined_at       TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (room_id, user_id)
+);
+
+CREATE TABLE messages (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id         UUID REFERENCES message_rooms(id),
+  sender_id       UUID REFERENCES users(id),
+  content         TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE notifications (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
-  type            TEXT NOT NULL,           -- 'match_request', 'match_accepted', 'match_rejected'
+  type            TEXT NOT NULL, -- match_apply, match_accept, match_reject, new_message
   content         TEXT NOT NULL,
   is_read         BOOLEAN DEFAULT FALSE,
-  related_id      UUID,                    -- 관련 match id
+  related_id      UUID,
   created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE reviews (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id        UUID REFERENCES matches(id),
+  reviewer_id     UUID REFERENCES users(id),
+  reviewee_id     UUID REFERENCES users(id),
+  rating          SMALLINT CHECK (rating BETWEEN 1 AND 5),
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(match_id, reviewer_id, reviewee_id)
 );
 ```
 
 ---
 
-## 5. 화면 흐름 (User Flow)
+## 5. 화면 흐름 및 기능 명세
 
-```
-[랜딩/로그인] → [회원가입] → [이메일 인증] → [메인 홈]
-                                                    ├─ [공모전 탭]
-                                                    │     ├─ [프로필 입력/수정 모달]
-                                                    │     ├─ [분야별 공모전 목록]
-                                                    │     └─ [공모전 상세 → 팀원 찾기]
-                                                    │           └─ [유저 프로필 카드 → 매칭 신청]
-                                                    └─ [스포츠 탭]
-                                                          ├─ [프로필 입력/수정 모달]
-                                                          ├─ [종목별 예약 현황]
-                                                          └─ [예약 슬롯 선택 → 파트너 찾기]
-                                                                └─ [유저 프로필 카드 → 매칭 신청]
+### 5.1 주요 탭 (v2.0 확장)
+- **홈 (Home)**: 랜딩, 요약 정보 제공
+- **공모전 (Contest)**: 지역별(충청권) 공모전 목록, 팀원 모집 (자동 만료)
+- **스포츠 (Sports)**: 시설 예약 현황, 매치 모집 글 목록 및 파트너 매칭
+- **메시지 (Messages)**: 1:1 매치 채팅 및 공모전 그룹 채팅 탭 지원
+- **알림 (Notifications)**: 실시간 알림 피드
+- **내 정보 (Profile)**: 프로필, 지원한/받은 신청 관리, 캘린더, 매너 평가
 
-[매칭 신청] → [알림 발송] → [수락/거절] → [매칭 완료 → 연락처/채팅 공개]
-```
+### 5.2 공모전 매칭 상세
+- **목록**: 충청북도, 충청남도, 세종특별자치시, 대전광역시 4개 지역 필터링
+- **팀원 모집**: 마감일 + 최대 인원(남은 자리 실시간 표시) 기반. 정원이 차면 자동 마감 처리.
+- **채팅**: 공모전 팀원 신청 수락 시 해당 팀의 **그룹 채팅방**에 자동 입장. 팀장(작성자)은 추가 멤버 초대 가능.
 
----
+### 5.3 스포츠 매칭 상세
+- **예약 연동**: 시설 예약 크롤링 데이터에서 '예약 가능' 슬롯을 선택하여 파트너 모집 가능.
+- **매치 모집**: 팀명, 종목(축구/풋살/농구/e스포츠 등), 장소, 경기일시, 원하는 수준 기재.
+- **채팅**: 1:1 매치 신청이 수락되면 1:1 채팅방 자동 생성.
 
-## 6. 페이지별 기능 명세
-
-### 6.1 메인 홈 (`/`)
-
-- 상단 네비게이션 바: 로고, 공모전 탭, 스포츠 탭, 알림 아이콘(뱃지), 프로필 아이콘
-- 공모전 / 스포츠 두 섹션으로 분리된 랜딩 카드
-- 각 섹션에 현재 진행 중인 공모전 수, 오늘 예약 가능한 시설 슬롯 수 표시
-
-### 6.2 공모전 페이지 (`/contest`)
-
-**레이아웃**
-- 상단: 프로필 등록/수정 아이콘 버튼 (우측 상단)
-- 중단: 분야 필터 탭 (전체 / 마케팅·아이디어 / 영상·UCC·사진 / 디자인 / 문학·글 / IT·소프트웨어 / 예체능·음악·미술 / 학술·창업·논술)
-- 하단: 공모전 카드 그리드 (무한 스크롤)
-
-**공모전 카드 항목**
-- 썸네일, 제목, 주최기관, 분야 태그, 마감일, 시상내역
-
-**공모전 상세 페이지 (`/contest/:id`)**
-- 공모전 기본 정보 전체
-- "팀원 구하기" 버튼 → 해당 공모전을 기준으로 매칭 가능한 유저 목록 표시
-- 유저 목록은 자신의 공모전 프로필의 `fields`와 겹치는 사람 우선 정렬
-
-**공모전 프로필 모달**
-- 학과 (텍스트 입력)
-- 성별 (선택)
-- 나이 (숫자 입력)
-- 공모전 참여 횟수 (숫자 입력)
-- 자격증 (태그 입력, 최대 10개)
-- 관심 분야 (다중 선택)
-- 자기소개 (300자 이내)
-- 프로필 공개 여부 토글
-
-**유저 프로필 카드**
-- 닉네임, 학과, 나이, 성별
-- 공모전 참여 횟수, 자격증, 관심 분야
-- 자기소개
-- "매칭 신청" 버튼 + 신청 메시지 입력 (200자 이내)
-- "신고" 버튼
-
-### 6.3 스포츠 페이지 (`/sports`)
-
-**레이아웃**
-- 상단: 프로필 등록/수정 아이콘 버튼
-- 중단: 종목 탭 (풋살 / 농구 / 테니스 / 소운동장 / 종합운동장)
-- 하단: 날짜 선택 캘린더 + 해당 날짜 예약 현황 타임라인
-
-**예약 현황 타임라인**
-- 시간대별 슬롯 표시 (예약 완료 / 예약 가능 시각적 구분)
-- "예약 가능" 슬롯 클릭 → 해당 시간대에 함께 할 파트너 찾기
-
-**파트너 찾기 화면**
-- 선택한 시설·날짜·시간 표시
-- 매칭 가능한 유저 카드 목록 (스포츠 프로필 기반)
-- 유저 프로필 카드: 닉네임, 나이, 성별, 관심 종목, 운동 경력, 선출 여부, 자기소개
-
-**스포츠 프로필 모달**
-- 성별 (선택)
-- 나이 (숫자 입력)
-- 관심 종목 (다중 선택)
-- 운동 경력 (년 단위 숫자)
-- 선출 여부 (토글)
-- 자기소개 (300자 이내)
-- 프로필 공개 여부 토글
-
-### 6.4 매칭 관리 (`/matches`)
-
-- 보낸 신청 목록 (상태: 대기중 / 수락됨 / 거절됨 / 취소됨)
-- 받은 신청 목록
-- 매칭 수락 시: 상대방 연락처(이메일) 공개
-- 매칭 거절 / 취소 가능
-- 매칭 완료된 건 삭제 불가 (기록 유지, 신고 대비)
-
-### 6.5 알림 (`/notifications`)
-
-- 실시간 알림 (Supabase Realtime 활용)
-- 알림 유형: 매칭 신청 받음 / 매칭 수락됨 / 매칭 거절됨
-- 읽음/안읽음 구분, 전체 읽음 처리
-- 알림 클릭 시 관련 매칭 상세로 이동
-
-### 6.6 마이페이지 (`/profile`)
-
-- 닉네임 변경
-- 아바타 이미지 업로드 (Supabase Storage 사용)
-- 공모전 프로필 바로가기
-- 스포츠 프로필 바로가기
-- 로그아웃
-- 회원탈퇴
-
-### 6.7 신고 시스템
-
-- 유저 카드의 신고 버튼 → 사유 선택 (불쾌한 언행 / 허위 정보 / 스팸 / 기타) + 상세 내용 입력
-- 신고 접수 후 관리자 검토 (관리자 대시보드에서 처리)
-- 누적 신고 3회 이상: 계정 자동 비공개 + 관리자 알림
+### 5.4 신청 관리 및 매너 평가 (v2.0)
+- **프로필 대시보드**: '받은 신청', '지원한 신청' 탭을 통해 진행 상황 파악 및 대기중 신청 취소/수락/거절.
+- **매너 평가**: 매치(경기/프로젝트) 종료 후 상호 간 별점 평가 (1~5점). 누적 점수는 프로필에 노출.
 
 ---
 
-## 7. 크롤링 시스템
+## 6. 크롤링 및 자동화 시스템
 
-### 7.1 공모전 데이터 크롤링
+### 6.1 공모전 데이터 크롤링 (v2.0 개선)
+- **대상 지역**: 대전, 세종, 충청남도, 충청북도 주관/개최 공모전 한정.
+- **필수 수집 항목**: 제목, 주최기관, 지역, 접수 시작일(출시기한), 마감일, 최대 인원, URL 등. (마감기한/출시기한 필수 수집)
+- **실행 주기**: 매일 새벽 자동화 파이프라인 (Vercel Cron 또는 GitHub Actions) 실행.
+- **자동 만료**: `end_date` 가 현재 시간보다 과거인 경우 리스트에서 자동 제외 또는 DB에서 삭제 (`is_active = FALSE`).
 
-**대상 사이트**
-- 공모전닷컴 (www.contestkorea.com)
-- 위비티 (www.wevity.com)
-- 링커리어 (linkareer.com)
-
-**수집 필드**
-- 제목, 주최기관, 분야, 접수 시작일, 마감일, 시상내역, 지원 대상, URL, 썸네일
-
-**분야 매핑 규칙**
-```
-marketing  ← 마케팅, 아이디어, 광고, 홍보
-video      ← 영상, UCC, 사진, 영화
-design     ← 디자인, UI/UX, 캐릭터
-literature ← 문학, 글쓰기, 시, 소설, 수필
-it         ← IT, 소프트웨어, 개발, 해커톤, 앱
-arts       ← 예체능, 음악, 미술, 공연
-academic   ← 학술, 창업, 논술, 스타트업
-```
-
-**실행 주기**
-- 매일 오전 2시 자동 실행 (GitHub Actions cron 사용)
-- 신규 공모전 INSERT, 기존 공모전 마감일·상태 UPDATE
-- 마감일이 지난 공모전: `is_active = FALSE` 처리
-
-**GitHub Actions Workflow 예시**
-```yaml
-name: Contest Crawl
-on:
-  schedule:
-    - cron: '0 17 * * *'  # UTC 17:00 = KST 02:00
-  workflow_dispatch:
-
-jobs:
-  crawl:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: pip install -r crawlers/requirements.txt
-      - run: python crawlers/contest_crawler.py
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-```
-
-### 7.2 시설 예약 현황 크롤링
-
-**대상**: 충북대학교 학생생활관/진흥원 시설 예약 시스템
-
-**수집 대상 시설**
-- 풋살장, 농구장, 테니스장, 소운동장, 종합운동장
-
-**수집 필드**
-- 시설명, 예약 날짜, 시작/종료 시간, 예약 상태
-
-**실행 주기**
-- 매 1시간마다 실행 (GitHub Actions cron)
-- 기존 레코드와 비교해 상태 변경 시 UPDATE
-
-**주의사항**
-- 크롤링 가능 여부는 사전 확인 완료 (로그인 불필요한 공개 페이지 기준)
-- 사이트 구조 변경 시 크롤러 수동 업데이트 필요
-- 크롤링 실패 시 Supabase의 마지막 수집 데이터 유지, Vercel 로그에 에러 기록
+### 6.2 시설 예약 현황 크롤링 (기존 유지)
+- **대상**: 충북대학교 학생생활관/진흥원 시설 예약 시스템
+- **수집 대상**: 풋살장, 농구장, 테니스장, 소운동장, 종합운동장 등.
+- **실행 주기**: 매 1시간 주기 크롤링. 상태 변경(available ↔ reserved) 동기화.
 
 ---
 
-## 8. Claude API 활용 계획
+## 7. 권한 및 보안
 
-| 기능 | 활용 방식 |
-|------|----------|
-| 공모전 요약 | 크롤링한 공모전 상세 페이지 내용을 2~3줄로 요약 |
-| 매칭 추천 이유 | 두 유저 프로필을 비교해 "이 사람과 잘 맞는 이유" 한 줄 생성 |
-| 프로필 작성 도우미 | 자기소개 초안 작성 보조 (선택 기능) |
-
----
-
-## 9. 권한 및 보안
-
-### 9.1 Supabase RLS (Row Level Security) 정책
-
-- `users`: 본인 레코드만 UPDATE 가능, SELECT는 인증된 유저 전체 허용
-- `contest_profiles` / `sports_profiles`: 본인만 INSERT·UPDATE·DELETE, is_visible=TRUE인 레코드는 모든 인증 유저 SELECT 가능
-- `matches`: requester 또는 receiver만 SELECT·UPDATE 가능
-- `contests` / `sports_reservations`: 모든 인증 유저 SELECT 가능, INSERT·UPDATE는 service_role만 (크롤러)
-- `reports`: reporter만 INSERT, SELECT·UPDATE는 admin만
-
-### 9.2 API 보안
-
-- 모든 API Route는 Supabase JWT 검증 미들웨어 적용
-- 크롤러는 SUPABASE_SERVICE_KEY 사용 (클라이언트에 절대 노출 금지)
-- Claude API 키는 서버 사이드에서만 호출
-
-### 9.3 개인정보
-
-- 나이·성별·학과는 프로필 비공개 설정 시 다른 유저에게 비노출
-- 이메일은 매칭 수락 후에만 상대에게 공개
-- 탈퇴 후 30일 뒤 개인식별 정보 자동 삭제 (Supabase Edge Function cron 처리)
+### 7.1 Supabase RLS 및 인증 정책
+- 인증된 사용자만 프로필 조회 및 매치 신청 가능.
+- 본인의 게시글 및 신청 건에 대해서만 상태 업데이트 가능.
+- 채팅방 메시지는 해당 `room_members` 에 속한 유저만 `SELECT/INSERT` 가능.
 
 ---
 
-## 10. 에러 처리 및 예외 상황
+## 8. UI/UX 디자인 가이드라인
 
-| 상황 | 처리 방식 |
-|------|----------|
-| 크롤링 실패 | 기존 DB 데이터 유지, GitHub Actions 실패 알림 |
-| 예약 현황 사이트 다운 | 마지막 수집 시각 표시 후 "현재 정보를 불러올 수 없습니다" 안내 |
-| Claude API 오류 | AI 요약/추천 기능만 비활성화, 나머지 서비스 정상 운영 |
-| Supabase 연결 오류 | 500 에러 페이지 + 재시도 버튼 |
-| 중복 매칭 신청 | "이미 신청한 상대입니다" 메시지 |
-| 자기 자신에게 매칭 신청 | API에서 차단 |
+대학생들의 활기차고 트렌디한 감성에 맞춘 **"Campus Vibe & Modern Dynamic"** 디자인 시스템을 구축합니다. 단조로운 게시판 형태를 벗어나 직관적이고 매력적인 UI를 제공합니다.
+
+### 8.1 디자인 컨셉
+- **Glassmorphism (글래스모피즘)**: 반투명한 배경과 은은한 블러 효과를 통해 세련되고 현대적인 느낌 연출.
+- **Micro-animations (마이크로 인터랙션)**: 버튼 호버, 카드 스와이프, 하트/즐겨찾기 탭 시 부드럽고 통통 튀는 애니메이션 적용 (framer-motion 활용).
+- **Modern Typography**: 가독성과 세련됨을 동시에 잡는 폰트(Pretendard 또는 Inter) 사용.
+- **Dark Mode 지원**: 심야 시간대 이용이 많은 대학생을 배려한 매끄러운 다크 모드 전환.
+
+### 8.2 컬러 팔레트 (Vibrant & Trustworthy)
+| 용도 | 색상 특징 | 설명 |
+|------|-----------|------|
+| **Primary** | `#1E3A5F` (충북대 네이비) + 그라데이션 | 신뢰감을 주면서도 지루하지 않은 트렌디한 네이비/블루 그라데이션 |
+| **Accent** | `#FF6B35` (비비드 오렌지) | 공모전 마감 임박, 핵심 버튼(매칭 신청 등)에 사용하여 시선 유도 |
+| **Success/Danger** | `#22C55E` / `#EF4444` | 매치 수락(초록), 매치 거절/마감(빨강) 등 직관적 상태 표시 |
+| **Background** | `#F8FAFC` (라이트) / `#0F172A` (다크) | 눈이 편안한 여백 중심의 레이아웃 배색 |
+
+### 8.3 공모전 & 스포츠 시각화 배지
+- **종목 배지**: ⚽ (축구/그린), 🏀 (농구/오렌지), 🎮 (e스포츠/퍼플) 등 이모지와 색상을 결합한 직관적인 태그.
+- **수준/인원 배지**: 실력(초급/중급/고수)에 따른 네온 컬러 코딩. 남은 자리가 적을수록 붉은 계열로 변하는 다이내믹 잔여 인원 배지(v2.0 신규).
+- **지역 배지**: 충북(🏔️), 충남(🌊), 대전(⚗️), 세종(🏛️) 등 지역별 특색 있는 이모지와 파스텔톤 배경 조합.
+
+### 8.4 핵심 UI 컴포넌트
+- **매치/공모전 카드 (Interactive Card)**: 마우스 오버 시 카드가 살짝 떠오르며(Hover Lift) 그림자가 강조되는 3D 효과.
+- **실시간 토스트 알림 (Toast Notifications)**: 알림 수신 시 우측 하단에서 미끄러지듯 나타나는 팝업(스낵바).
+- **채팅 UI (Chat Bubble)**: 카카오톡 등 친숙한 메신저 스타일을 차용하되, 모서리가 둥근 세련된 말풍선과 부드러운 스크롤 제공.
 
 ---
 
-## 11. 비기능 요구사항
-
-- **응답속도**: 페이지 초기 로딩 2초 이내 (LCP 기준)
-- **모바일 대응**: 반응형 웹 (모바일 퍼스트 설계, 최소 375px)
-- **브라우저 지원**: Chrome, Safari, Edge 최신 2버전
-- **데이터 보존**: 매칭 기록 1년 보존, 공모전 데이터 마감 후 6개월 보존
-
----
-
-## 12. 개발 단계별 로드맵
+## 9. 개발 단계별 로드맵
 
 | 단계 | 내용 | 예상 기간 |
 |------|------|----------|
-| Phase 1 | 인증(회원가입/로그인) + DB 스키마 구축 | 1주 |
-| Phase 2 | 공모전 크롤러 + 공모전 목록/상세 페이지 | 1주 |
-| Phase 3 | 공모전 프로필 + 매칭 신청/수락 + 알림 | 1주 |
-| Phase 4 | 시설 예약 크롤러 + 스포츠 페이지 | 1주 |
-| Phase 5 | 스포츠 프로필 + 스포츠 매칭 | 0.5주 |
-| Phase 6 | Claude API 연동 (요약·추천) | 0.5주 |
-| Phase 7 | 신고 시스템 + 관리자 기능 | 0.5주 |
-| Phase 8 | QA, 최적화, Vercel 배포 | 0.5주 |
+| Phase 1 | 인증(이메일 회원가입/로그인) + DB 스키마 구축 | 1주 |
+| Phase 2 | **(수정) 지역별 공모전 크롤러 (충청권/날짜/인원)** + 공모전 탭 | 1주 |
+| Phase 3 | 스포츠 시설 예약 크롤러 + 스포츠 탭 기초 | 1주 |
+| Phase 4 | 매치 모집글 작성 + 신청/수락 프로세스 + 알림 (Realtime) | 1주 |
+| Phase 5 | **(신규) 메시지(1:1 & 그룹 채팅) + 내 정보(신청 관리)** | 1.5주 |
+| Phase 6 | **(신규) 매너 평가 시스템** + Claude API 요약 연동 | 0.5주 |
+| Phase 7 | QA, Vercel/Supabase 최적화 및 배포 | 1주 |
 
 ---
 
-## 13. 환경 변수 목록
+## 10. 환경 변수 목록
 
 ```env
-# Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_KEY=          # 서버/크롤러 전용, 클라이언트 노출 금지
-
-# Anthropic
-ANTHROPIC_API_KEY=             # 서버 사이드 전용
-
-# 기타
-NEXT_PUBLIC_APP_URL=           # 배포 URL (이메일 인증 리다이렉트용)
+SUPABASE_SERVICE_ROLE_KEY=
+ANTHROPIC_API_KEY=
+CRON_SECRET=
+NEXT_PUBLIC_APP_URL=
 ```
-
----
-
-## 14. 확정 사항 및 미결 사항
-
-### 확정된 정책
-
-| 항목 | 결정 내용 |
-|------|----------|
-| 공모전 썸네일 | 원본 URL 참조 방식 (직접 저장 X) |
-| 학번 실재 여부 검증 | 형식 검증(10자리 숫자)만 수행, 실재 여부 검증 없음 |
-| 선출 여부 검증 | 자기 신고 기반, 허위 신고 적발 시 신고 시스템으로 처리 |
-| 허위 정보 제재 | 매칭 후 상대방이 허위 정보를 신고하면 관리자 검토 후 계정 정지/퇴출 |
-
-### 허위 정보 제재 프로세스
-
-1. 매칭 성사 후 상대방 프로필이 허위임을 인지
-2. 매칭 상세 화면 또는 유저 카드에서 "허위 정보 신고" 제출
-3. 관리자 검토 → 사실 확인
-4. 1차: 경고 + 프로필 강제 수정 요청
-5. 2차: 30일 계정 정지
-6. 3차: 영구 퇴출 (동일 이메일 재가입 불가)
-
-### 미결 사항 (추후 확인 필요)
-
-- [ ] 충북대 진흥원 시설 예약 페이지의 크롤링 대상 URL 및 HTML 구조 최종 확인
-- [ ] 매칭 성사 후 소통 방식: 이메일 공개만 할지, 플랫폼 내 채팅 기능 추가할지 결정

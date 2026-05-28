@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Calendar, Building2, Trophy, ExternalLink } from 'lucide-react'
-import { Contest, CONTEST_FIELD_LABELS } from '@/types/database'
+import { Contest, CONTEST_FIELD_LABELS, CONTEST_REGION_EMOJIS } from '@/types/database'
 
 interface ContestCardProps {
   contest: Contest
@@ -44,10 +44,15 @@ export default function ContestCard({ contest }: ContestCardProps) {
           </div>
         )}
         {/* Field badge overlay */}
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex items-center gap-2">
           <span className="badge-primary text-xs backdrop-blur-sm">
             {CONTEST_FIELD_LABELS[contest.field]}
           </span>
+          {contest.region && (
+            <span className="badge text-xs backdrop-blur-sm" style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+              {CONTEST_REGION_EMOJIS[contest.region]}
+            </span>
+          )}
         </div>
         {/* Deadline overlay */}
         <div className="absolute top-3 right-3">
@@ -78,14 +83,21 @@ export default function ContestCard({ contest }: ContestCardProps) {
         )}
 
         {/* Footer */}
-        <div className="mt-auto flex items-center justify-between pt-3 border-t border-surface-border">
-          <div className="flex items-center gap-1.5 text-gray-500 text-xs">
-            <Calendar className="w-3.5 h-3.5" />
-            <span>~{new Date(contest.end_date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}</span>
+        <div className="mt-auto space-y-2 pt-3 border-t border-surface-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>~{new Date(contest.end_date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}</span>
+            </div>
+            <span className="text-primary-500 group-hover:text-primary-300 transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" />
+            </span>
           </div>
-          <span className="text-primary-500 group-hover:text-primary-300 transition-colors">
-            <ExternalLink className="w-3.5 h-3.5" />
-          </span>
+          {contest.max_participants && (
+            <div className="text-xs text-gray-500">
+              <span className="text-accent-400 font-medium">최대 {contest.max_participants}명</span>
+            </div>
+          )}
         </div>
       </div>
     </Link>

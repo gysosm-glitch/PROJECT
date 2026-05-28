@@ -65,19 +65,25 @@ export default function NotificationsPage() {
     }
   }
 
+  const unreadCount = notifications.filter(n => !n.is_read).length
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-1">알림</h1>
-          <p className="text-gray-400 text-sm">새로운 매칭 요청과 결과를 확인하세요.</p>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-1">
+            <Bell className="w-5 h-5 text-accent-400" />
+            <h1 className="text-xl font-bold text-white">알림</h1>
+          </div>
+          <p className="text-gray-400 text-sm">총 {notifications.length}개의 알림 중 읽지 않은 항목 {unreadCount}개</p>
         </div>
-        {notifications.some(n => !n.is_read) && (
+        {unreadCount > 0 && (
           <button
             onClick={markAllAsRead}
-            className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
+            className="text-sm px-3 py-1.5 rounded-lg bg-primary-600/20 border border-primary-500/30 text-primary-300 hover:bg-primary-600/30 transition-colors"
           >
-            모두 읽음 처리
+            모두 읽음
           </button>
         )}
       </div>

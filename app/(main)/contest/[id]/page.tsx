@@ -53,8 +53,8 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
               </div>
             )}
             <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-400">
-                  {CONTEST_FIELD_LABELS[contest.field as ContestField] || '기타'}
+                <span className="badge-primary px-3 py-1">
+                  {CONTEST_FIELD_LABELS[contest.field as keyof typeof CONTEST_FIELD_LABELS] || '기타'}
                 </span>
             </div>
           </div>

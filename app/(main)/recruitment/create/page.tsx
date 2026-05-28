@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Trophy, Dumbbell } from 'lucide-react'
@@ -13,7 +13,7 @@ import {
 
 type RoomType = 'contest' | 'sports'
 
-export default function CreateRecruitmentRoom() {
+function CreateRecruitmentRoomContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -248,7 +248,7 @@ export default function CreateRecruitmentRoom() {
                   <option value="">공모전을 선택해주세요</option>
                   {contests.map((contest) => (
                     <option key={contest.id} value={contest.id}>
-                      [{CONTEST_FIELD_LABELS[contest.field as ContestField] || '기타'}] {contest.title}
+                      [{CONTEST_FIELD_LABELS[contest.field as keyof typeof CONTEST_FIELD_LABELS] || '기타'}] {contest.title}
                     </option>
                   ))}
                 </select>
@@ -412,5 +412,13 @@ export default function CreateRecruitmentRoom() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function CreateRecruitmentRoom() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full" /></div>}>
+      <CreateRecruitmentRoomContent />
+    </Suspense>
   )
 }

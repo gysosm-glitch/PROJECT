@@ -13,7 +13,7 @@ export default function RecruitmentRoomDetail() {
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data?.user))
+    supabase.auth.getUser().then((res: any) => setUser(res.data?.user))
   }, [supabase])
 
   const [room, setRoom] = useState<any>(null)

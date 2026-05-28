@@ -20,7 +20,7 @@ export default function CreateRecruitmentRoom() {
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data?.user))
+    supabase.auth.getUser().then((res: any) => setUser(res.data?.user))
   }, [supabase])
 
   // Form state
@@ -60,7 +60,7 @@ export default function CreateRecruitmentRoom() {
       setError('공모전 목록을 불러올 수 없습니다.')
     } else {
       setContests(data || [])
-      if (preselectId && data?.some(c => c.id === preselectId)) {
+      if (preselectId && data?.some((c: any) => c.id === preselectId)) {
         setSelectedContestId(preselectId)
       }
     }

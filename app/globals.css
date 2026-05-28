@@ -18,9 +18,20 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  background-color: #f8fafc;
-  color: #1e293b;
+  background-color: #e5e7eb; /* Gray desktop background */
+  color: #191919;
   font-family: var(--font-inter), sans-serif;
+}
+
+/* Mobile App Frame */
+.mobile-app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #ffffff;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow-x: hidden;
 }
 
 /* Scrollbar */
@@ -95,19 +106,19 @@ body {
 /* Button base */
 @layer components {
   .btn-primary {
-    @apply bg-primary-800 hover:bg-primary-700 text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-primary-800/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-primary-500 hover:bg-primary-600 text-[#191919] font-bold px-6 py-3 rounded-2xl transition-all duration-300 hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply bg-white hover:bg-surface-elevated text-primary-800 font-semibold px-6 py-3 rounded-2xl border border-surface-border hover:border-primary-300 transition-all duration-300 active:scale-95 shadow-sm;
+    @apply bg-white hover:bg-gray-50 text-[#191919] font-bold px-6 py-3 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 active:scale-95 shadow-sm;
   }
 
   .btn-accent {
-    @apply bg-accent-500 hover:bg-accent-600 text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-accent-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-gray-800 hover:bg-gray-900 text-white font-bold px-6 py-3 rounded-2xl transition-all duration-300 hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-ghost {
-    @apply text-slate-500 hover:text-primary-800 hover:bg-primary-50 font-medium px-4 py-2 rounded-xl transition-all duration-300;
+    @apply text-gray-500 hover:text-[#191919] hover:bg-gray-100 font-medium px-4 py-2 rounded-xl transition-all duration-300;
   }
 
   .input-base {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Clock } from 'lucide-react'
+import { Users, Clock, User } from 'lucide-react'
 
 interface RoomListProps {
   type: 'contest' | 'sports'
@@ -65,28 +65,40 @@ export default function RoomList({ type, relationId, sportsFacility, sportsDate 
         <Link
           key={room.id}
           href={`/recruitment/${room.id}`}
-          className="block glass-card p-5 group transition-all"
+          className="flex items-center gap-4 bg-white p-4 border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition-colors"
         >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-slate-900 text-lg group-hover:text-primary-600 transition-colors">
+          {/* Avatar (Left) */}
+          <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+            {room.host?.avatar_url ? (
+              <img src={room.host.avatar_url} alt="profile" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-6 h-6 text-gray-400" />
+            )}
+          </div>
+          
+          {/* Content (Middle) */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-[#191919] text-base truncate mb-0.5">
               {room.title}
             </h3>
-            <span className="badge-primary">모집 중</span>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <span className="truncate max-w-[100px]">{room.host?.nickname || '익명'}</span>
+              <span>·</span>
+              <span>{new Date(room.created_at).toLocaleDateString()}</span>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2 text-slate-600">
-              <span className="font-medium">{room.host?.nickname || '익명'}</span>
-              <span className="text-slate-300">|</span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {new Date(room.created_at).toLocaleDateString()}
+          
+          {/* Members (Right) */}
+          <div className="flex-shrink-0 flex flex-col items-end gap-1">
+            <div className="bg-[#f5f6f8] px-2.5 py-1 rounded-full flex items-center gap-1">
+              <Users className="w-3.5 h-3.5 text-gray-500" />
+              <span className="text-xs font-bold text-gray-700">
+                {room.current_members} <span className="text-gray-400 font-normal">/ {room.required_members + 1}</span>
               </span>
             </div>
-            <div className="flex items-center gap-1.5 font-medium">
-              <Users className="w-4 h-4 text-primary-500" />
-              <span className="text-primary-600">{room.current_members}</span>
-              <span className="text-slate-400">/ {room.required_members + 1}명</span>
-            </div>
+            <span className="text-[10px] font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded">
+              모집 중
+            </span>
           </div>
         </Link>
       ))}

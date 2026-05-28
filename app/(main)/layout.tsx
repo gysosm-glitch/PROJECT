@@ -1,12 +1,14 @@
-import Navbar from '@/components/layout/Navbar'
+import AppHeader from '@/components/layout/AppHeader'
+import BottomTabBar from '@/components/layout/BottomTabBar'
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-surface">
-      <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="mobile-app-container flex flex-col">
+      <AppHeader />
+      <main className="flex-1 overflow-y-auto pb-20 bg-[#f5f6f8]">
         {children}
       </main>
+      <BottomTabBar />
     </div>
   )
 }

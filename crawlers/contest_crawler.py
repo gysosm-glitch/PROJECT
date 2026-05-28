@@ -36,6 +36,8 @@ def supabase_upsert(table: str, data: dict, on_conflict: str):
         'Prefer': 'resolution=merge-duplicates'
     }
     resp = requests.post(url, json=data, headers=headers)
+    if not resp.ok:
+        logger.error(f"Supabase API Error: {resp.text}")
     resp.raise_for_status()
     return resp
 

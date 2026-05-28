@@ -158,7 +158,9 @@ CREATE TABLE contests (
 CREATE TABLE sports_reservations (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   facility        TEXT NOT NULL CHECK (facility IN (
-                    'futsal', 'basketball', 'tennis',
+                    'futsal_a', 'futsal_b',
+                    'basketball_a', 'basketball_b',
+                    'tennis_a', 'tennis_b', 'tennis_c', 'tennis_d', 'tennis_e',
                     'small_field', 'main_field'
                   )),
   reservation_date DATE NOT NULL,

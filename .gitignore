@@ -42,3 +42,9 @@ __pycache__/
 .venv/
 venv/
 crawlers/__pycache__/
+
+# 시크릿 키가 포함된 임시 스크립트 (절대 커밋 금지)
+apply-policy.js
+apply-rls-policy.js
+apply_rls_policy.py
+fix-users-table.js

@@ -226,11 +226,14 @@ export type ContestField =
   | 'academic'
 
 export type FacilityType =
-  | 'futsal'
-  | 'basketball'
-  | 'tennis'
+  | 'futsal_a' | 'futsal_b'
+  | 'basketball_a' | 'basketball_b'
+  | 'tennis_a' | 'tennis_b' | 'tennis_c' | 'tennis_d' | 'tennis_e'
   | 'small_field'
   | 'main_field'
+
+// 시설 그룹 타입 (필터 UI용)
+export type FacilityGroup = 'futsal' | 'basketball' | 'tennis' | 'small_field' | 'main_field'
 
 export type ReservationStatus = 'available' | 'reserved' | 'closed'
 
@@ -263,17 +266,32 @@ export const CONTEST_FIELD_LABELS: Record<ContestField, string> = {
 }
 
 export const FACILITY_LABELS: Record<FacilityType, string> = {
-  futsal: '풋살장',
-  basketball: '농구장',
-  tennis: '테니스장',
+  futsal_a: '풋살장 A코트',
+  futsal_b: '풋살장 B코트',
+  basketball_a: '농구장 A코트',
+  basketball_b: '농구장 B코트',
+  tennis_a: '테니스장 A코트',
+  tennis_b: '테니스장 B코트',
+  tennis_c: '테니스장 C코트',
+  tennis_d: '테니스장 D코트',
+  tennis_e: '테니스장 E코트',
   small_field: '소운동장',
   main_field: '종합운동장',
 }
 
-export const FACILITY_CODES: Record<FacilityType, string> = {
-  main_field: 'k8SXwWKYYsNokZnEbsNsxGSQkpCTlG2Xkmpv',
-  small_field: 'lcSWwWiYacNmkZfEbsNsxGyQlJCTlG2Xkmpv',
-  futsal: 'lMSUwWWYZcNpkZTEZ8NtxGSQmZCTlG2Xkmpv',
-  basketball: 'mcSVwWaYZ8NkkZLEbMNwxGiQk5CTlG2Xkmpv',
-  tennis: 'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',
+// 시설 그룹 → 소속 코트 목록
+export const FACILITY_GROUP_COURTS: Record<FacilityGroup, FacilityType[]> = {
+  futsal:      ['futsal_a', 'futsal_b'],
+  basketball:  ['basketball_a', 'basketball_b'],
+  tennis:      ['tennis_a', 'tennis_b', 'tennis_c', 'tennis_d', 'tennis_e'],
+  small_field: ['small_field'],
+  main_field:  ['main_field'],
+}
+
+export const FACILITY_GROUP_LABELS: Record<FacilityGroup, string> = {
+  futsal:      '풋살장',
+  basketball:  '농구장',
+  tennis:      '테니스장',
+  small_field: '소운동장',
+  main_field:  '종합운동장',
 }

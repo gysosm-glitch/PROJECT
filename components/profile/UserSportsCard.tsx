@@ -1,4 +1,4 @@
-import { SportsProfile, User, FACILITY_LABELS, FacilityType } from '@/types/database'
+import { SportsProfile, User, FACILITY_GROUP_LABELS, FacilityGroup } from '@/types/database'
 import { User as UserIcon, Activity, Star, MessageSquare } from 'lucide-react'
 
 interface UserSportsCardProps {
@@ -60,7 +60,7 @@ export default function UserSportsCard({ profile, onMatchRequest, onReport }: Us
           <div className="flex flex-wrap gap-1.5 mt-2">
             {profile.sports.map(sport => (
               <span key={sport} className="badge-accent text-xs">
-                {FACILITY_LABELS[sport as FacilityType]}
+                {FACILITY_GROUP_LABELS[sport as FacilityGroup] ?? sport}
               </span>
             ))}
           </div>

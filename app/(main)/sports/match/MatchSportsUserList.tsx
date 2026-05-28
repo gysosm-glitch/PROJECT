@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { FacilityType, SportsProfile } from '@/types/database'
+import { FacilityType, FacilityGroup, FACILITY_GROUP_COURTS, SportsProfile } from '@/types/database'
 import UserSportsCard from '@/components/profile/UserSportsCard'
 import MatchRequestModal from '@/components/match/MatchRequestModal'
 import ReportModal from '@/components/report/ReportModal'
@@ -16,6 +16,14 @@ interface MatchSportsUserListProps {
 
 type ProfileWithUser = SportsProfile & { users: { nickname: string } | null }
 
+// 코트 타입(futsal_a 등) → 그룹(futsal 등) 역변환
+function getFacilityGroup(facility: FacilityType): FacilityGroup {
+  for (const [group, courts] of Object.entries(FACILITY_GROUP_COURTS) as [FacilityGroup, FacilityType[]][]) {
+    if ((courts as string[]).includes(facility)) return group
+  }
+  return facility as unknown as FacilityGroup
+}
+
 export default function MatchSportsUserList({ facility, reservationId, currentUserId }: MatchSportsUserListProps) {
   const supabase = createClient()
   const [users, setUsers] = useState<ProfileWithUser[]>([])
@@ -25,11 +33,13 @@ export default function MatchSportsUserList({ facility, reservationId, currentUs
 
   useEffect(() => {
     const fetchUsers = async () => {
+      // 코트(futsal_a)를 그룹(futsal)으로 변환해서 관심 종목 매칭
+      const group = getFacilityGroup(facility)
       let query = supabase
         .from('sports_profiles')
         .select('*, users(nickname)')
         .eq('is_visible', true)
-        .contains('sports', [facility])
+        .contains('sports', [group])
 
       if (currentUserId) {
         query = query.neq('user_id', currentUserId)

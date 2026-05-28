@@ -89,12 +89,19 @@ export default function SignupPage() {
 
     // Insert user profile
     if (data.user) {
-      await supabase.from('users').insert({
+      const { error: insertError } = await supabase.from('users').insert({
         id: data.user.id,
         email: form.email,
         nickname: form.nickname,
         student_id: form.studentId,
       })
+
+      if (insertError) {
+        console.error('회원가입 후 users 테이블 저장 실패:', insertError)
+        setError('사용자 정보 저장에 실패했습니다. 관리자에게 문의하세요.')
+        setLoading(false)
+        return
+      }
     }
 
     setStep('success')

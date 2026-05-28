@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { FacilityType, FACILITY_LABELS } from '@/types/database'
+import { FacilityGroup, FACILITY_GROUP_LABELS } from '@/types/database'
 import { X, Loader2, Save } from 'lucide-react'
 
 interface SportsProfileModalProps {
   onClose: () => void
 }
 
-const ALL_SPORTS = Object.entries(FACILITY_LABELS) as [FacilityType, string][]
+const ALL_SPORTS = Object.entries(FACILITY_GROUP_LABELS) as [FacilityGroup, string][]
 
 export default function SportsProfileModal({ onClose }: SportsProfileModalProps) {
   const supabase = createClient()

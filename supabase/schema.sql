@@ -197,6 +197,9 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "users_select_authenticated" ON public.users
   FOR SELECT TO authenticated USING (true);
 
+CREATE POLICY "users_insert_own" ON public.users
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "users_update_own" ON public.users
   FOR UPDATE TO authenticated USING (auth.uid() = id);
 

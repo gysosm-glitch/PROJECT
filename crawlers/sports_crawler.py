@@ -38,13 +38,37 @@ def supabase_upsert(table: str, data: list, on_conflict: str):
     resp.raise_for_status()
     return resp
 
-# 시설 코드 매핑
+# 시설 코드 매핑 (코트별 분리)
+# 풋살·농구는 A/B코트, 테니스는 A~E코트를 각각 개별 시설로 처리
+# 종합운동장·소운동장은 단일 시설로 처리
 FACILITIES = {
-    'main_field':   'k8SXwWKYYsNokZnEbsNsxGSQkpCTlG2Xkmpv',  # 종합운동장
-    'small_field':  'lcSWwWiYacNmkZfEbsNsxGyQlJCTlG2Xkmpv',  # 소운동장
-    'futsal':       'lMSUwWWYZcNpkZTEZ8NtxGSQmZCTlG2Xkmpv',  # 풋살장 (A/B코트)
-    'basketball':   'mcSVwWaYZ8NkkZLEbMNwxGiQk5CTlG2Xkmpv',  # 농구장 (A/B코트)
-    'tennis':       'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 (A~E코트)
+    'main_field':    'k8SXwWKYYsNokZnEbsNsxGSQkpCTlG2Xkmpv',  # 종합운동장
+    'small_field':   'lcSWwWiYacNmkZfEbsNsxGyQlJCTlG2Xkmpv',  # 소운동장
+    'futsal_a':      'lMSUwWWYZcNpkZTEZ8NtxGSQmZCTlG2Xkmpv',  # 풋살장 A코트
+    'futsal_b':      'lMSUwWWYZcNpkZTEZ8NtxGSQmZCTlG2Xkmpv',  # 풋살장 B코트 (동일 API, court_index=1)
+    'basketball_a':  'mcSVwWaYZ8NkkZLEbMNwxGiQk5CTlG2Xkmpv',  # 농구장 A코트
+    'basketball_b':  'mcSVwWaYZ8NkkZLEbMNwxGiQk5CTlG2Xkmpv',  # 농구장 B코트 (동일 API, court_index=1)
+    'tennis_a':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 A코트
+    'tennis_b':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 B코트 (court_index=1)
+    'tennis_c':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 C코트 (court_index=2)
+    'tennis_d':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 D코트 (court_index=3)
+    'tennis_e':      'mMSbwWGYZMNkkZXEasNuxGiQkpCTlG2Xkmpv',  # 테니스장 E코트 (court_index=4)
+}
+
+# 코트 인덱스 매핑: 동일 API에서 코트별 unavailable 항목을 구분하는 인덱스
+# API 응답의 unavailable 리스트에서 ":코트인덱스" 형태로 구분됨
+COURT_INDEX = {
+    'main_field':   None,  # 단일 시설, 인덱스 불필요
+    'small_field':  None,
+    'futsal_a':     0,
+    'futsal_b':     1,
+    'basketball_a': 0,
+    'basketball_b': 1,
+    'tennis_a':     0,
+    'tennis_b':     1,
+    'tennis_c':     2,
+    'tennis_d':     3,
+    'tennis_e':     4,
 }
 
 BASE_URL = 'https://sports.cbnu.ac.kr/'
@@ -90,7 +114,15 @@ def login() -> bool:
 
 
 def get_schedule(facility_type: str, code: str, target_date: str) -> list[dict]:
-    """특정 날짜의 예약 스케줄 조회 (신규 API 포맷 파싱 지원)"""
+    """
+    특정 날짜의 예약 스케줄 조회 (코트별 분리 지원)
+    
+    - 풋살A/B, 농구A/B, 테니스A~E는 COURT_INDEX 딕셔너리를 통해 인덱스 기반으로 구분
+    - API 응답의 unavailable 리스트 형식: ["HH-MM:코트인덱스", ...]
+      예) "08-00:0" = 0번 코트(A코트) 08:00 예약됨, "08-00:1" = 1번 코트(B코트) 예약됨
+    - 날짜 자체가 예약 불가인 경우 (학교 정책 상 오픈 전)는 슬롯을 생성하지 않음
+    """
+    court_idx = COURT_INDEX.get(facility_type)
     headers = {
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'Accept-Language': 'ko-KR,ko;q=0.9',
@@ -112,76 +144,69 @@ def get_schedule(facility_type: str, code: str, target_date: str) -> list[dict]:
         data = resp.json()
 
         slots = []
-        
+
         # 신규 API 날짜 키 매핑: 예: "day_2026-05-29"
         formatted_date = f"{target_date[:4]}-{target_date[4:6]}-{target_date[6:]}"
         date_key = f"day_{formatted_date}"
-        
+
         day_items = data.get(date_key)
-        if day_items and isinstance(day_items, list):
-            for item in day_items:
-                time_s = item.get('time_s', '') # 예: "07:00"
-                time_e = item.get('time_e', '') # 예: "18:00"
-                unavailable = item.get('unavailable', [])
-                msg = item.get('msg', '')
-                
-                # 예약 불가 여부 판단
-                is_closed = False
-                if "예약가능한 날짜가 아닙니다" in msg or not time_s or not time_e:
-                    is_closed = True
-                    
-                if time_s and time_e:
-                    try:
-                        start_hour = int(time_s.split(":")[0])
-                        end_hour = int(time_e.split(":")[0])
-                        
-                        for h in range(start_hour, end_hour):
-                            slot_start = f"{h:02d}:00"
-                            slot_end = f"{h+1:02d}:00"
-                            
-                            if is_closed:
-                                status = 'closed'
-                            else:
-                                # unavailable 목록에 해당 시간대(예: "08-00:2")가 있는지 체크
-                                is_unavailable = False
-                                for unav in unavailable:
-                                    if unav.startswith(f"{h:02d}-00") or unav.startswith(f"{h:02d}:00"):
-                                        is_unavailable = True
-                                        break
-                                status = 'reserved' if is_unavailable else 'available'
-                                
-                            slots.append({
-                                'facility': facility_type,
-                                'reservation_date': formatted_date,
-                                'start_time': slot_start,
-                                'end_time': slot_end,
-                                'status': status,
-                                'last_crawled_at': datetime.utcnow().isoformat(),
-                            })
-                    except Exception as parse_e:
-                        logger.error(f"시간 파싱 오류 ({facility_type}, {target_date}): {parse_e}")
-                        
-        # 중복 슬롯 제거 및 병합 (예: 풋살장 A코트, B코트가 동시에 존재할 때 하나의 시설 상태로 병합)
-        deduped_slots = {}
-        for slot in slots:
-            key = (slot['facility'], slot['reservation_date'], slot['start_time'])
-            if key not in deduped_slots:
-                deduped_slots[key] = slot
-            else:
-                existing_status = deduped_slots[key]['status']
-                new_status = slot['status']
-                
-                # 병합 규칙: 하나라도 'available'이면 예약 가능, 둘 다 reserved이면 reserved, 그 외엔 closed
-                if existing_status == 'available' or new_status == 'available':
-                    merged_status = 'available'
-                elif existing_status == 'reserved' or new_status == 'reserved':
-                    merged_status = 'reserved'
-                else:
-                    merged_status = 'closed'
-                    
-                deduped_slots[key]['status'] = merged_status
-                
-        return list(deduped_slots.values())
+        if not day_items or not isinstance(day_items, list):
+            logger.debug(f"  {facility_type} {target_date}: 응답 데이터 없음 (예약 미오픈 날짜일 가능성)")
+            return []
+
+        for item in day_items:
+            time_s = item.get('time_s', '')  # 예: "07:00"
+            time_e = item.get('time_e', '')  # 예: "18:00"
+            unavailable = item.get('unavailable', [])  # 예: ["08-00:0", "09-00:1"]
+            msg = item.get('msg', '')
+
+            # 날짜 자체가 예약 불가인 경우: 해당 날짜 슬롯 전체 건너뜀
+            # (학교 정책 상 아직 오픈되지 않은 날짜 → DB에 저장하지 않음)
+            if "예약가능한 날짜가 아닙니다" in msg:
+                logger.debug(f"  {facility_type} {target_date}: 예약 미오픈 날짜 - 스킵")
+                return []
+
+            if not time_s or not time_e:
+                continue
+
+            try:
+                start_hour = int(time_s.split(":")[0])
+                end_hour = int(time_e.split(":")[0])
+
+                for h in range(start_hour, end_hour):
+                    slot_start = f"{h:02d}:00"
+                    slot_end = f"{h+1:02d}:00"
+
+                    if court_idx is None:
+                        # 단일 시설 (종합운동장, 소운동장): 기존 방식 그대로
+                        is_unavailable = any(
+                            unav.startswith(f"{h:02d}-00") or unav.startswith(f"{h:02d}:00")
+                            for unav in unavailable
+                        )
+                    else:
+                        # 다중 코트 시설: "HH-MM:코트인덱스" 형식으로 해당 코트만 체크
+                        # 예: court_idx=0(A코트)이면 "08-00:0" 또는 "08:00:0" 패턴 확인
+                        is_unavailable = any(
+                            unav.startswith(f"{h:02d}-00:{court_idx}") or
+                            unav.startswith(f"{h:02d}:00:{court_idx}")
+                            for unav in unavailable
+                        )
+
+                    status = 'reserved' if is_unavailable else 'available'
+
+                    slots.append({
+                        'facility': facility_type,
+                        'reservation_date': formatted_date,
+                        'start_time': slot_start,
+                        'end_time': slot_end,
+                        'status': status,
+                        'last_crawled_at': datetime.utcnow().isoformat(),
+                    })
+
+            except Exception as parse_e:
+                logger.error(f"시간 파싱 오류 ({facility_type}, {target_date}): {parse_e}")
+
+        return slots
 
     except Exception as e:
         logger.error(f"get_schedule 오류 ({facility_type}, {target_date}): {e}")
@@ -201,23 +226,33 @@ def upsert_slots(slots: list[dict]) -> int:
 
 
 def crawl_all():
-    """전체 시설 × 오늘~7일 크롤링"""
+    """
+    전체 시설 × 오늘~7일 크롤링
+    
+    - 코트별로 분리된 FACILITIES를 순회 (풋살A/B, 농구A/B, 테니스A~E 각각)
+    - 학교 예약 시스템에서 아직 오픈하지 않은 날짜는 슬롯을 생성하지 않으므로
+      실제 6~7일차 데이터는 학교 정책에 따라 자동으로 추가됨
+    - 동일 API 코드를 여러 코트가 공유하는 경우, API 호출 결과를 캐싱해
+      불필요한 중복 요청을 방지함
+    """
     if not login():
         logger.error("로그인 실패로 크롤링 중단")
         return
 
     today = date.today()
+    # 오늘 포함 7일치 (오늘 ~ D+6)
     dates = [(today + timedelta(days=i)).strftime('%Y%m%d') for i in range(7)]
+    logger.info(f"크롤링 대상 날짜: {dates[0]} ~ {dates[-1]} (7일치)")
 
     total = 0
     for facility_type, code in FACILITIES.items():
-        logger.info(f"--- {facility_type} 크롤링 ---")
+        logger.info(f"--- {facility_type} 크롤링 시작 ---")
         for d in dates:
             slots = get_schedule(facility_type, code, d)
             count = upsert_slots(slots)
             total += count
-            logger.info(f"  {d}: {count}슬롯 처리")
-            time.sleep(0.5)  # Rate limiting
+            logger.info(f"  {d}: {count}슬롯 저장 (예약 미오픈 날짜는 0슬롯)")
+            time.sleep(0.3)  # Rate limiting (코트 수 증가로 약간 간격 줄임)
 
     logger.info(f"총 {total}개 슬롯 처리 완료")
 

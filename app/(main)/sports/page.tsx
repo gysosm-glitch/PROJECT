@@ -24,7 +24,7 @@ const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토']
 
 export default function SportsPage() {
   const supabase = createClient()
-  const [activeFacility, setActiveFacility] = useState<FacilityType>('futsal')
+  const [activeFacility, setActiveFacility] = useState<FacilityType>('futsal_a')
   const [activeDate, setActiveDate] = useState<string>(DATES[0])
   const [reservations, setReservations] = useState<SportsReservation[]>([])
   const [loading, setLoading] = useState(true)

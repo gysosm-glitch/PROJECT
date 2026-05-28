@@ -58,6 +58,12 @@ CREATE TABLE IF NOT EXISTS public.contests (
                     'marketing', 'video', 'design',
                     'literature', 'it', 'arts', 'academic'
                   )),
+  region          TEXT DEFAULT '충청북도' CHECK (region IN (
+                    '충청북도',
+                    '충청남도',
+                    '세종특별자치시',
+                    '대전광역시'
+                  )),
   start_date      DATE,
   end_date        DATE NOT NULL,
   prize           TEXT,

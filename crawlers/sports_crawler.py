@@ -154,14 +154,29 @@ def get_schedule(facility_type: str, code: str, target_date: str) -> list[dict]:
             logger.debug(f"  {facility_type} {target_date}: 응답 데이터 없음 (예약 미오픈 날짜일 가능성)")
             return []
 
-        for item in day_items:
-            time_s = item.get('time_s', '')  # 예: "07:00"
-            time_e = item.get('time_e', '')  # 예: "18:00"
-            unavailable = item.get('unavailable', [])  # 예: ["08-00:0", "09-00:1"]
+        # -------------------------------------------------------
+        # 코트 선택:
+        #   - 단일 시설 (소운동장, 종합운동장): court_idx=None → day_items 전체 순회
+        #   - 다중 코트 시설 (풋살A/B, 농구A/B, 테니스A~E):
+        #     day_items[0]=A코트, day_items[1]=B코트, ...
+        #     court_idx를 리스트 인덱스로 사용해 해당 코트 1개만 처리
+        # -------------------------------------------------------
+        if court_idx is None:
+            items_to_process = day_items
+        else:
+            if court_idx >= len(day_items):
+                logger.debug(f"  {facility_type} {target_date}: court_idx={court_idx} >= day_items 길이({len(day_items)}) - 코트 없음")
+                return []
+            items_to_process = [day_items[court_idx]]
+
+        slots = []
+        for item in items_to_process:
+            time_s = item.get('time_s', '')   # 예: "07:00"
+            time_e = item.get('time_e', '')   # 예: "18:00"
+            unavailable = item.get('unavailable', [])  # 예: ["08-00", "09-00"]
             msg = item.get('msg', '')
 
-            # 날짜 자체가 예약 불가인 경우: 해당 날짜 슬롯 전체 건너뜀
-            # (학교 정책 상 아직 오픈되지 않은 날짜 → DB에 저장하지 않음)
+            # 날짜 자체가 예약 미오픈인 경우 → DB 저장 안 함
             if "예약가능한 날짜가 아닙니다" in msg:
                 logger.debug(f"  {facility_type} {target_date}: 예약 미오픈 날짜 - 스킵")
                 return []
@@ -177,29 +192,18 @@ def get_schedule(facility_type: str, code: str, target_date: str) -> list[dict]:
                     slot_start = f"{h:02d}:00"
                     slot_end = f"{h+1:02d}:00"
 
-                    if court_idx is None:
-                        # 단일 시설 (종합운동장, 소운동장): 기존 방식 그대로
-                        is_unavailable = any(
-                            unav.startswith(f"{h:02d}-00") or unav.startswith(f"{h:02d}:00")
-                            for unav in unavailable
-                        )
-                    else:
-                        # 다중 코트 시설: "HH-MM:코트인덱스" 형식으로 해당 코트만 체크
-                        # 예: court_idx=0(A코트)이면 "08-00:0" 또는 "08:00:0" 패턴 확인
-                        is_unavailable = any(
-                            unav.startswith(f"{h:02d}-00:{court_idx}") or
-                            unav.startswith(f"{h:02d}:00:{court_idx}")
-                            for unav in unavailable
-                        )
-
-                    status = 'reserved' if is_unavailable else 'available'
+                    # unavailable 형식: "HH-MM" 또는 "HH:MM" (코트 인덱스 없음)
+                    is_unavailable = any(
+                        unav.startswith(f"{h:02d}-00") or unav.startswith(f"{h:02d}:00")
+                        for unav in unavailable
+                    )
 
                     slots.append({
                         'facility': facility_type,
                         'reservation_date': formatted_date,
                         'start_time': slot_start,
                         'end_time': slot_end,
-                        'status': status,
+                        'status': 'reserved' if is_unavailable else 'available',
                         'last_crawled_at': datetime.utcnow().isoformat(),
                     })
 

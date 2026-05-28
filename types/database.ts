@@ -215,6 +215,64 @@ export type Database = {
         }
         Update: Partial<Database['public']['Tables']['notifications']['Insert']>
       }
+      recruitment_rooms: {
+        Row: {
+          id: string
+          host_id: string
+          type: 'contest' | 'sports'
+          contest_id: string | null
+          sports_facility: FacilityType | null
+          sports_date: string | null
+          sports_start_time: string | null
+          sports_end_time: string | null
+          title: string
+          description: string | null
+          required_members: number
+          current_members: number
+          status: 'active' | 'closed' | 'cancelled'
+          is_recruiting: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          host_id: string
+          type: 'contest' | 'sports'
+          contest_id?: string | null
+          sports_facility?: FacilityType | null
+          sports_date?: string | null
+          sports_start_time?: string | null
+          sports_end_time?: string | null
+          title: string
+          description?: string | null
+          required_members: number
+          current_members?: number
+          status?: 'active' | 'closed' | 'cancelled'
+          is_recruiting?: boolean
+        }
+        Update: Partial<Database['public']['Tables']['recruitment_rooms']['Insert']>
+      }
+      room_applications: {
+        Row: {
+          id: string
+          room_id: string
+          applicant_id: string
+          status: 'pending' | 'accepted' | 'rejected' | 'cancelled'
+          message: string | null
+          applied_at: string
+          decided_at: string | null
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          applicant_id: string
+          status?: 'pending' | 'accepted' | 'rejected' | 'cancelled'
+          message?: string | null
+          applied_at?: string
+          decided_at?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['room_applications']['Insert']>
+      }
     }
   }
 }
@@ -249,6 +307,9 @@ export type NotificationType =
   | 'match_request'
   | 'match_accepted'
   | 'match_rejected'
+  | 'room_application'
+  | 'room_accepted'
+  | 'room_rejected'
 
 // Convenience types
 export type User = Database['public']['Tables']['users']['Row']
@@ -259,6 +320,8 @@ export type SportsReservation = Database['public']['Tables']['sports_reservation
 export type Match = Database['public']['Tables']['matches']['Row']
 export type Report = Database['public']['Tables']['reports']['Row']
 export type Notification = Database['public']['Tables']['notifications']['Row']
+export type RecruitmentRoom = Database['public']['Tables']['recruitment_rooms']['Row']
+export type RoomApplication = Database['public']['Tables']['room_applications']['Row']
 
 // UI helper maps
 export const CONTEST_FIELD_LABELS: Record<ContestField, string> = {

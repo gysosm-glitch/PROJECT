@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { CONTEST_FIELD_LABELS, ContestField } from '@/types/database'
 import { Calendar, Building2, ExternalLink, Trophy, Users, ArrowLeft } from 'lucide-react'
-import MatchUserList from './MatchUserList'
+import RoomList from '@/components/room/RoomList'
 
 interface ContestDetailPageProps {
   params: Promise<{ id: string }>
@@ -61,7 +61,7 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
 
           {/* Info */}
           <div className="flex-1 p-6 sm:p-8 flex flex-col justify-center">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 leading-tight">
               {contest.title}
             </h1>
             
@@ -70,18 +70,18 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
                 <div className="flex items-start gap-3">
                   <Building2 className="w-5 h-5 text-gray-500 mt-0.5" />
                   <div>
-                    <p className="text-sm text-gray-500 mb-0.5">주최</p>
-                    <p className="text-white font-medium">{contest.organizer}</p>
+                    <p className="text-sm text-slate-500 mb-0.5">주최</p>
+                    <p className="text-slate-800 font-medium">{contest.organizer}</p>
                   </div>
                 </div>
               )}
               <div className="flex items-start gap-3">
                 <Calendar className="w-5 h-5 text-gray-500 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-500 mb-0.5">접수 기간</p>
-                  <p className="text-white font-medium">
+                  <p className="text-sm text-slate-500 mb-0.5">접수 기간</p>
+                  <p className="text-slate-800 font-medium">
                     {contest.start_date ? `${contest.start_date} ~ ` : '마감일: '}
-                    <span className="text-red-400">{contest.end_date}</span>
+                    <span className="text-red-500">{contest.end_date}</span>
                   </p>
                 </div>
               </div>
@@ -89,8 +89,8 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
                 <div className="flex items-start gap-3">
                   <Trophy className="w-5 h-5 text-accent-500 mt-0.5" />
                   <div>
-                    <p className="text-sm text-gray-500 mb-0.5">시상 내역</p>
-                    <p className="text-white font-medium">{contest.prize}</p>
+                    <p className="text-sm text-slate-500 mb-0.5">시상 내역</p>
+                    <p className="text-slate-800 font-medium">{contest.prize}</p>
                   </div>
                 </div>
               )}
@@ -105,12 +105,12 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
               >
                 상세정보 보기 <ExternalLink className="w-4 h-4" />
               </a>
-              <a
-                href="#match-section"
+              <Link
+                href={`/recruitment/create?type=contest&contestId=${contest.id}`}
                 className="btn-primary flex-1 flex items-center justify-center gap-2"
               >
-                <Users className="w-4 h-4" /> 팀원 구하기
-              </a>
+                <Users className="w-4 h-4" /> 팀원 모집 방 개설하기
+              </Link>
             </div>
           </div>
         </div>
@@ -118,16 +118,24 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
 
       {/* Match Section */}
       <div id="match-section" className="pt-8 scroll-mt-20">
-        <div className="flex items-center gap-3 mb-6">
-          <Users className="w-6 h-6 text-primary-400" />
-          <h2 className="text-2xl font-bold text-white">함께할 팀원 찾기</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Users className="w-6 h-6 text-primary-600" />
+            <h2 className="text-2xl font-bold text-slate-900">모집 중인 팀</h2>
+          </div>
+          <Link
+            href={`/recruitment/create?type=contest&contestId=${contest.id}`}
+            className="text-sm text-primary-600 font-medium hover:underline"
+          >
+            + 직접 개설하기
+          </Link>
         </div>
-        <p className="text-gray-400 mb-6">
-          이 공모전 분야({CONTEST_FIELD_LABELS[contest.field as ContestField] || '기타'})에 관심 있는 학우들입니다.
+        <p className="text-slate-500 mb-6">
+          이 공모전을 함께할 팀원을 찾고 있는 모집 방입니다.
         </p>
 
-        {/* Client component for match users list */}
-        <MatchUserList contestId={contest.id} field={contest.field} currentUserId={user?.id} />
+        {/* Client component for recruitment rooms list */}
+        <RoomList type="contest" relationId={contest.id} />
       </div>
     </div>
   )

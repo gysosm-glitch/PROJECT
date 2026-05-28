@@ -89,12 +89,19 @@ def is_target_region(contest: dict) -> bool:
     
     text = f"{title} {organizer} {category}".lower()
     
-    # 충청 대전 세종 지역 및 대학교/지자체 키워드
+    # 명시적으로 타 지역 주관인 경우 제외 (전국 제외)
+    exclude_keywords = ['서울', '부산', '진주', '대구', '광주', '인천', '울산', '제주']
+    if any(kw in organizer for kw in exclude_keywords):
+        # 단, 주최/주관에 충청권 키워드가 같이 있으면 허용 (예: 서울-충북 연합)
+        if not any(kw in organizer for kw in ['충북', '충남', '대전', '세종', '충청']):
+            return False
+
+    # 충청 대전 세종 지역 및 대학교/지자체 키워드 (교대 등 모호한 키워드 제외)
     target_keywords = [
         '대전', '세종', '충남', '충청남도', '충북', '충청북도', '충청', 
         '청주', '충주', '천안', '아산', '공주', '제천', '음성', '진천', '괴산', '증평', '보은', '옥천', '영동', '단양', 
         '홍성', '예산', '태안', '당진', '서산', '보령', '서천', '부여', '논산', '계룡', '금산',
-        '충북대', '충남대', '한밭대', '목원대', '배재대', '대전대', '우송대', '서원대', '청주대', '교원대', '교대', 'cbnu'
+        '충북대', '충남대', '한밭대', '목원대', '배재대', '대전대', '우송대', '서원대', '청주대', '청주교대', '공주교대', 'cbnu'
     ]
     
     for kw in target_keywords:
@@ -105,15 +112,44 @@ def is_target_region(contest: dict) -> bool:
 def upsert_contest(contest: dict) -> bool:
     """Supabase에 공모전 upsert (지역 필터링 적용 및 URL 기준 중복 방지)"""
     if not is_target_region(contest):
-        logger.info(f"지역 필터링 스킵: {contest.get('title', '')[:45]}...")
+        logger.debug(f"지역 필터링 스킵: {contest.get('title', '')[:45]}... | 주최: {contest.get('organizer', 'N/A')}")
         return False
-        
+
     try:
+        # 지역 정보 추가 (region 컬럼이 필수이므로)
+        region = _extract_region(contest)
+        contest['region'] = region
         supabase_upsert('contests', contest, on_conflict='url')
+        logger.info(f"저장 성공: {contest.get('title', '')[:45]}... | 지역: {region} | 주최: {contest.get('organizer', 'N/A')}")
         return True
     except Exception as e:
         logger.error(f"Upsert 실패: {e} | URL: {contest.get('url', '')[:80]}")
         return False
+
+def _extract_region(contest: dict) -> str:
+    """공모전 정보에서 region 추출"""
+    title = contest.get('title', '')
+    organizer = contest.get('organizer', '') or ''
+    text = f"{title} {organizer}".lower()
+
+    # 충청북도 관련 키워드
+    if any(kw in text for kw in ['충북', '충청북도', '청주', '충주', '제천', '음성', '진천', '괴산', '증평', '보은', '옥천', '영동', '단양', '충북대', 'cbnu']):
+        return '충청북도'
+
+    # 충청남도 관련 키워드
+    if any(kw in text for kw in ['충남', '충청남도', '천안', '아산', '공주', '홍성', '예산', '태안', '당진', '서산', '보령', '서천', '부여', '논산', '계룡', '금산', '충남대']):
+        return '충청남도'
+
+    # 대전 관련 키워드
+    if any(kw in text for kw in ['대전', '한밭대', '배재대', '대전대', '우송대']):
+        return '대전광역시'
+
+    # 세종 관련 키워드
+    if any(kw in text for kw in ['세종', '세종특별자치시']):
+        return '세종특별자치시'
+
+    # 기본값 (기타 충청지역)
+    return '충청북도'
 
 def deactivate_expired():
     """마감일 지난 공모전 비활성화"""
@@ -187,29 +223,46 @@ def crawl_contestkorea():
                     if not date_el:
                         date_el = item.select_one('.date')
                         
+                    start_date = None
                     end_date = None
                     if date_el:
                         date_text = date_el.get_text(strip=True)
                         # Match formats like 05.25~07.12
                         match = re.search(r'(\d{2})[.\-/](\d{2})~(\d{2})[.\-/](\d{2})', date_text)
                         if match:
+                            start_month = match.group(1)
+                            start_day = match.group(2)
                             end_month = match.group(3)
                             end_day = match.group(4)
                             current_year = datetime.now().year
-                            if int(end_month) < datetime.now().month:
+                            
+                            if int(start_month) > int(end_month) and int(end_month) < datetime.now().month:
+                                start_year = current_year
                                 end_year = current_year + 1
                             else:
+                                start_year = current_year
                                 end_year = current_year
+                                
+                            start_date = f"{start_year}-{start_month}-{start_day}"
                             end_date = f"{end_year}-{end_month}-{end_day}"
 
                     if not end_date:
                         continue
 
+                    # 인원 추출 시도
+                    max_p = None
+                    # 간단한 휴리스틱: 제목에 'n명', 'n인' 등이 있는지 체크
+                    p_match = re.search(r'(\d)[명인](?:\s이하|까지|팀원)', title)
+                    if p_match:
+                        max_p = int(p_match.group(1))
+
                     contest = {
                         'title': title,
                         'organizer': organizer,
                         'field': map_field(title, category),
+                        'start_date': start_date,
                         'end_date': end_date,
+                        'max_participants': max_p,
                         'url': detail_url,
                         'thumbnail_url': None,
                         'is_active': True,
@@ -382,6 +435,13 @@ def crawl_linkareer():
                             if file_key in apollo:
                                 thumbnail_url = apollo[file_key].get("url", "")
                         
+                        # 시작일 (recruitStartAt 밀리초 타임스탬프)
+                        recruit_start = value.get("recruitStartAt")
+                        start_date = None
+                        if recruit_start:
+                            dt_start = datetime.fromtimestamp(recruit_start / 1000.0)
+                            start_date = dt_start.strftime("%Y-%m-%d")
+
                         # 마감일 (recruitCloseAt 밀리초 타임스탬프)
                         recruit_close = value.get("recruitCloseAt")
                         end_date = None
@@ -395,11 +455,19 @@ def crawl_linkareer():
                         # 카테고리
                         category = value.get("category", "")
                         
+                        # 인원 추출 (링크어리어는 제목이나 카테고리에서)
+                        max_p = None
+                        p_match = re.search(r'(\d)[명인](?:\s이하|까지|팀원)', title)
+                        if p_match:
+                            max_p = int(p_match.group(1))
+                        
                         contest = {
                             'title': title,
                             'organizer': organizer,
                             'field': map_field(title, category),
+                            'start_date': start_date,
                             'end_date': end_date,
+                            'max_participants': max_p,
                             'url': detail_url,
                             'thumbnail_url': thumbnail_url,
                             'is_active': True,

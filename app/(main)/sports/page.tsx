@@ -1,5 +1,5 @@
 'use client'
-
+import Link from 'next/link'
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FacilityType, FACILITY_LABELS, SportsReservation } from '@/types/database'
@@ -140,10 +140,13 @@ export default function SportsPage() {
               <div className="text-center py-16 bg-surface-elevated/30 rounded-xl border border-surface-border border-dashed">
                 <Info className="w-8 h-8 text-gray-500 mx-auto mb-2" />
                 {activeFacility === 'other' ? (
-                  <>
+                  <div className="flex flex-col items-center justify-center">
                     <p className="text-gray-400">탁구, 배드민턴 등 교내 시설 예약이 지원되지 않는 종목입니다.</p>
-                    <p className="text-xs text-accent-400 mt-2 font-medium">직접 매칭 방을 개설하여 파트너를 구해보세요!</p>
-                  </>
+                    <p className="text-xs text-accent-400 mt-2 font-medium mb-4">직접 매칭 방을 개설하여 파트너를 구해보세요!</p>
+                    <Link href={`/recruitment/create?type=sports&facility=other&date=${activeDate}`} className="btn-primary text-sm px-6 py-2">
+                      매칭 방 개설하기
+                    </Link>
+                  </div>
                 ) : (
                   <>
                     <p className="text-gray-400">조회된 예약 데이터가 없습니다.</p>

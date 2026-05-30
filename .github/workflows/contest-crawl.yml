@@ -32,7 +32,7 @@ jobs:
       - name: 공모전 크롤링 실행
         run: python crawlers/contest_crawler.py
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
       - name: 실패 시 알림

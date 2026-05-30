@@ -84,31 +84,36 @@ def map_field(title: str, category: str = '') -> str:
     return 'academic'  # 기본값
 
 def is_target_region(contest: dict) -> bool:
-    """공모전이 대전, 세종, 충청 지역에 해당되는지 판별"""
-    title = contest.get('title', '')
+    """주관 기관(organizer) 및 제목(title) 기준으로 대전, 세종, 충청 지역 판별"""
     organizer = contest.get('organizer', '') or ''
-    category = contest.get('field', '') or ''
+    title = contest.get('title', '') or ''
     
-    text = f"{title} {organizer} {category}".lower()
+    text_to_check = f"{title} {organizer}".lower()
+
+    # 명시적으로 전국/타 지역 키워드가 포함된 경우 제외 (순수 지역 공모전만)
+    exclude_keywords = [
+        '서울', '경기', '인천', '강원', '부산', '대구', '울산', '광주', 
+        '경북', '경상북도', '경남', '경상남도', '전북', '전라북도', '전남', '전라남도', '제주', '전국'
+    ]
     
-    # 명시적으로 타 지역 주관인 경우 제외 (전국 제외)
-    exclude_keywords = ['서울', '부산', '진주', '대구', '광주', '인천', '울산', '제주']
-    if any(kw in organizer for kw in exclude_keywords):
-        # 단, 주최/주관에 충청권 키워드가 같이 있으면 허용 (예: 서울-충북 연합)
-        if not any(kw in organizer for kw in ['충북', '충남', '대전', '세종', '충청']):
+    if any(kw in text_to_check for kw in exclude_keywords):
+        # 단, 충청권 키워드가 같이 있으면 허용
+        if not any(kw in text_to_check for kw in ['충북', '충남', '대전', '세종', '충청']):
             return False
 
-    # 충청 대전 세종 지역 및 대학교/지자체 키워드 (교대 등 모호한 키워드 제외)
+    # 충청 대전 세종 지역 및 대학교/지자체 키워드
     target_keywords = [
         '대전', '세종', '충남', '충청남도', '충북', '충청북도', '충청', 
         '청주', '충주', '천안', '아산', '공주', '제천', '음성', '진천', '괴산', '증평', '보은', '옥천', '영동', '단양', 
         '홍성', '예산', '태안', '당진', '서산', '보령', '서천', '부여', '논산', '계룡', '금산',
-        '충북대', '충남대', '한밭대', '목원대', '배재대', '대전대', '우송대', '서원대', '청주대', '청주교대', '공주교대', 'cbnu'
+        '충북대', '충남대', '한밭대', '목원대', '배재대', '대전대', '우송대', '서원대', '청주대', '청주교대', '공주교대', 
+        '건양대', '순천향대', '백석대', '선문대', '호서대', '남서울대', '극동대', '중원대', '유원대', '세명대'
     ]
     
     for kw in target_keywords:
-        if kw in text:
+        if kw in text_to_check:
             return True
+            
     return False
 
 def upsert_contest(contest: dict) -> bool:
@@ -129,21 +134,21 @@ def upsert_contest(contest: dict) -> bool:
         return False
 
 def _extract_region(contest: dict) -> str:
-    """공모전 정보에서 region 추출"""
-    title = contest.get('title', '')
+    """공모전 제목 및 주최 정보에서 region 추출"""
     organizer = contest.get('organizer', '') or ''
+    title = contest.get('title', '') or ''
     text = f"{title} {organizer}".lower()
 
     # 충청북도 관련 키워드
-    if any(kw in text for kw in ['충북', '충청북도', '청주', '충주', '제천', '음성', '진천', '괴산', '증평', '보은', '옥천', '영동', '단양', '충북대', 'cbnu']):
+    if any(kw in text for kw in ['충북', '충청북도', '청주', '충주', '제천', '음성', '진천', '괴산', '증평', '보은', '옥천', '영동', '단양', '충북대', '서원대', '청주대', '세명대', '중원대', '유원대', '극동대']):
         return '충청북도'
 
     # 충청남도 관련 키워드
-    if any(kw in text for kw in ['충남', '충청남도', '천안', '아산', '공주', '홍성', '예산', '태안', '당진', '서산', '보령', '서천', '부여', '논산', '계룡', '금산', '충남대']):
+    if any(kw in text for kw in ['충남', '충청남도', '천안', '아산', '공주', '홍성', '예산', '태안', '당진', '서산', '보령', '서천', '부여', '논산', '계룡', '금산', '충남대', '건양대', '순천향대', '백석대', '선문대', '호서대', '남서울대']):
         return '충청남도'
 
     # 대전 관련 키워드
-    if any(kw in text for kw in ['대전', '한밭대', '배재대', '대전대', '우송대']):
+    if any(kw in text for kw in ['대전', '한밭대', '배재대', '대전대', '우송대', '목원대']):
         return '대전광역시'
 
     # 세종 관련 키워드
@@ -151,20 +156,24 @@ def _extract_region(contest: dict) -> str:
         return '세종특별자치시'
 
     # 기본값 (기타 충청지역)
-    return '충청북도'
+    return '충청권'
 
-def deactivate_expired():
-    """마감일 지난 공모전 비활성화"""
+def delete_expired():
+    """마감일 지난 공모전 자동 삭제"""
+    from datetime import date
     today = date.today().isoformat()
+    url = f"{SUPABASE_URL}/rest/v1/contests?end_date=lt.{today}"
+    headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'Content-Type': 'application/json'
+    }
     try:
-        supabase_update(
-            'contests',
-            {'is_active': False},
-            {'lt_end_date': today, 'eq_is_active': 'true'}
-        )
-        logger.info(f"만료 공모전 비활성화 완료")
+        resp = requests.delete(url, headers=headers)
+        resp.raise_for_status()
+        logger.info(f"만료 공모전 자동 삭제 완료")
     except Exception as e:
-        logger.error(f"비활성화 오류: {e}")
+        logger.error(f"만료 공모전 삭제 오류: {e}")
 
 
 # ================================================
@@ -299,7 +308,7 @@ def crawl_wevity():
     }
 
     count = 0
-    for page in range(1, 6):
+    for page in range(1, 16):
         try:
             url = f'{base_url}/?c=find&s=1&gub=1&sGub=1&cate=1&page={page}'
             resp = requests.get(url, headers=headers, timeout=15)
@@ -360,10 +369,14 @@ def crawl_wevity():
                     if not end_date:
                         continue
 
+                    # 시작일 (위비티 리스트에는 없으므로 오늘 날짜로 대체)
+                    start_date = datetime.now().strftime("%Y-%m-%d")
+
                     contest = {
                         'title': title,
                         'organizer': organizer,
                         'field': map_field(title, category),
+                        'start_date': start_date,
                         'end_date': end_date,
                         'url': detail_url,
                         'thumbnail_url': None,
@@ -399,7 +412,7 @@ def crawl_linkareer():
     }
 
     count = 0
-    for page in range(1, 4):  # 최대 3페이지
+    for page in range(1, 16):  # 15페이지까지 깊게 탐색
         try:
             url = f'https://linkareer.com/list/contest?page={page}'
             resp = requests.get(url, headers=headers, timeout=15)
@@ -454,6 +467,11 @@ def crawl_linkareer():
                         if not end_date:
                             continue
                             
+                        # 마감기한이 이미 지난 공모전은 제외
+                        today_str = datetime.now().strftime("%Y-%m-%d")
+                        if end_date < today_str:
+                            continue
+                            
                         # 카테고리
                         category = value.get("category", "")
                         
@@ -502,7 +520,7 @@ if __name__ == '__main__':
     crawl_contestkorea()
     crawl_wevity()
     crawl_linkareer()
-    deactivate_expired()
+    delete_expired()
 
     elapsed = (datetime.now() - start).seconds
     logger.info(f"===== 크롤링 완료 ({elapsed}초) =====")

@@ -17,9 +17,8 @@ interface SportsFilterProps {
 const GROUPS: { value: FacilityGroup; emoji: string }[] = [
   { value: 'futsal',      emoji: '⚽' },
   { value: 'basketball',  emoji: '🏀' },
-  { value: 'tennis',      emoji: '🎾' },
-  { value: 'small_field', emoji: '🏃' },
-  { value: 'main_field',  emoji: '🏟️' },
+
+  { value: 'other',       emoji: '🏓' },
 ]
 
 // 어떤 FacilityType이 어떤 그룹에 속하는지 역방향 조회

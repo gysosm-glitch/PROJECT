@@ -139,8 +139,17 @@ export default function SportsPage() {
             ) : reservations.length === 0 ? (
               <div className="text-center py-16 bg-surface-elevated/30 rounded-xl border border-surface-border border-dashed">
                 <Info className="w-8 h-8 text-gray-500 mx-auto mb-2" />
-                <p className="text-gray-400">조회된 예약 데이터가 없습니다.</p>
-                <p className="text-xs text-gray-500 mt-1">학교 시스템 예약 기간이 아닐 수 있습니다.</p>
+                {activeFacility === 'other' ? (
+                  <>
+                    <p className="text-gray-400">탁구, 배드민턴 등 교내 시설 예약이 지원되지 않는 종목입니다.</p>
+                    <p className="text-xs text-accent-400 mt-2 font-medium">직접 매칭 방을 개설하여 파트너를 구해보세요!</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-400">조회된 예약 데이터가 없습니다.</p>
+                    <p className="text-xs text-gray-500 mt-1">학교 시스템 예약 기간이 아닐 수 있습니다.</p>
+                  </>
+                )}
               </div>
             ) : (
               <ReservationTimeline reservations={reservations} facility={activeFacility} date={activeDate} />

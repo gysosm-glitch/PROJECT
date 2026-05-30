@@ -35,7 +35,13 @@ export default function RoomList({ type, relationId, sportsFacility, sportsDate 
       }
 
       if (type === 'sports') {
-        if (sportsFacility) query = query.eq('sports_facility', sportsFacility)
+        if (sportsFacility) {
+          if (sportsFacility === 'other') {
+            query = query.is('sports_facility', null)
+          } else {
+            query = query.eq('sports_facility', sportsFacility)
+          }
+        }
         if (sportsDate) query = query.eq('sports_date', sportsDate)
       }
 

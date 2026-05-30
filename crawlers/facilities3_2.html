@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- META -->
+<meta charset="utf-8">
+<meta name="Generator" content="XpressEngine">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<!-- TITLE -->
+<title>예약현황</title>
+<!-- CSS -->
+<link rel="stylesheet" href="/common/css/xe.min.css?20250317114153" />
+<link rel="stylesheet" href="/addons/popup_opener/popup_opener.css?20240401104222" />
+<link rel="stylesheet" href="/common/js/plugins/ui/jquery-ui.min.css?20231117162317" />
+<link rel="stylesheet" href="/layouts/Facilities_cbnu/css/layout.min.css?20240924125947" />
+<link rel="stylesheet" href="/layouts/Facilities_cbnu/css/sub_contents.css?20260130085912" />
+<link rel="stylesheet" href="/layouts/Facilities_cbnu/css/dropgnb.css?20240207093305" />
+<link rel="stylesheet" href="/layouts/Facilities_cbnu/css/main_contents.css?20240315134044" />
+<link rel="stylesheet" href="/layouts/Facilities_cbnu/css/webfont.min.css?20240115132909" />
+<link rel="stylesheet" href="/layouts/Facilities_cbnu/css/pretendard.css?20240325130233" />
+<link rel="stylesheet" href="/layouts/Facilities_cbnu/css/simpleBanner.css?20240329155329" />
+<link rel="stylesheet" href="/layouts/Facilities_cbnu/css/fctdtl.css?20240222172932" />
+<link rel="stylesheet" href="/common/xeicon/xeicon.min.css?20231117162314" />
+<link rel="stylesheet" href="/layouts/Facilities_cbnu/css/widget.login.min.css?20241126124624" />
+<link rel="stylesheet" href="/modules/editor/styles/ckeditor_light/style.css?20231117161958" />
+<link rel="stylesheet" href="/files/faceOff/240/layout.css?20241203101613" />
+<!-- JS -->
+<script nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3">
+var current_url = "https://sports.cbnu.ac.kr/?mid=cbnu_facilities3_2";
+var request_uri = "https://sports.cbnu.ac.kr/";
+var current_mid = "cbnu_facilities3_2";
+var waiting_message = "서버에 요청 중입니다. 잠시만 기다려주세요.";
+var ssl_actions = new Array();
+var default_url = "https://sports.cbnu.ac.kr";
+</script>
+<!--[if lt IE 9]><script src="/common/js/jquery-1.x.min.js?20231117162313" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<![endif]--><!--[if gte IE 9]><!--><script src="/common/js/jquery.min.js?20251111144753" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<!--<![endif]--><script src="/common/js/x.min.js?20231117162313" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<script src="/common/js/xe.min.js?20240419121958" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<script src="/addons/popup_opener/jquery.popup_opener.1.5.4.3.js?20231117162223" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<script src="/layouts/Facilities_cbnu/js/layout.min.js?20240115132911" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<script src="/layouts/Facilities_cbnu/js/dropgnb.js?20240115132910" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<script src="/layouts/Facilities_cbnu/js/simpleBanner.js?20240417172646" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<script src="/layouts/Facilities_cbnu/js/fctdtl.js?20240222172027" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<script src="/layouts/Facilities_cbnu/js/jquery.parallax-scroll.min.js?20240115132911" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>
+<!-- RSS -->
+<!-- ICON -->
+<link rel="shortcut icon" href="https://sports.cbnu.ac.kr/files/attach/xeicon/favicon.ico" /><link rel="apple-touch-icon" href="https://sports.cbnu.ac.kr/files/attach/xeicon/mobicon.png" />
+
+<meta name="viewport" content="width=device-width, user-scalable=yes">
+<link rel="canonical" href="https://sports.cbnu.ac.kr/cbnu_facilities3_2" />
+<meta name="keywords" content="충북대학교 체육진흥원, 충북대학교 스포츠센터, 충북대학교 학내체육시설" />
+<meta name="description" content="충북대학교 체육진흥원, 충북대학교 스포츠센터, 충북대학교 학내체육시설" />
+<meta property="og:locale" content="ko_KR" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://sports.cbnu.ac.kr/cbnu_facilities3_2" />
+<meta property="og:title" content="예약현황" />
+<meta property="og:description" content="충북대학교 체육진흥원, 충북대학교 스포츠센터, 충북대학교 학내체육시설" />
+<meta property="og:image" content="https://sports.cbnu.ac.kr/files/attach/site_image/site_image.1707204324.jpg" />
+<meta property="og:image:width" content="600" />
+<meta property="og:image:height" content="315" />
+<style>
+.fctsub ul.fntrvt{margin-top:0px; border-top:none; padding-top:0px;}
+.time_table {width:100%;}
+.time_table th , .time_table  td{text-align: center;}
+.time_table thead tr th > span.time, .time_table thead tr th > span.day{
+    display: block;
+    background: #000;
+    color: #fff;
+    padding: 7px 0px;
+    border-radius: 5px;
+}
+.time_table tbody td.res{ 
+    border: 1px solid #ccc;
+    color: #000;
+    /*padding: 7px 0px;*/
+    border-radius: 5px;
+	height:36px;}
+.time_table tbody td.disabled{background:#cecece;}
+.time_table tbody td.week_0, .time_table tbody td.week_7{  border: 1px solid #ff8f8f; }
+.time_table tbody td.week_6{  border: 1px solid #8ecaff; }
+.fctsub ul.fntrvt > li{    width: 100%; margin-bottom:5px; border-radius: 5px;    padding: 15px;}
+.fctsub ul.fntrvt ul.facdetali{    padding: 5px 30px 11px 15px;}
+.fctsub ul.fntrvt li h5{padding-left: 5px;}
+.prev, .next{    cursor: pointer;}
+.time_table tbody td.res.state_1{    background: #f6bc79;
+    color: #000;
+}
+.time_table tbody td.res.state_2{  background: #f67979;
+    color: #fff;
+}
+.time_table thead tr th > span.week_6.day{
+	background:#3a79ff;
+}
+.time_table thead tr th > span.week_0.day, .time_table thead tr th > span.day.week_7{
+	background:#ff3030;
+}
+.time_table thead tr th > span.today.day{
+	background:#2d821c;
+}
+.time_table tbody td > span.today{  border: 1px solid #a8bba4; }
+.time_table tbody td {height: 60px;}
+span.s_title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 95px;
+  display: table-caption;
+}
+.tooltip-td{     cursor: help;}
+</style><script nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3">
+//<![CDATA[
+xe.current_lang = "ko";
+xe.cmd_find = "찾기";
+xe.cmd_cancel = "취소";
+xe.cmd_confirm = "확인";
+xe.msg_no_root = "루트는 선택 할 수 없습니다.";
+xe.msg_no_shortcut = "바로가기는 선택 할 수 없습니다.";
+xe.msg_select_menu = "대상 메뉴 선택";
+//]]>
+</script>
+</head>
+<body>
+																																					
+										
+																							
+		
+	<div class="container fixed_header  ">
+	<!-- HEADER -->
+	<div class="header_wrap xe-clearfix">
+		<div class="hd_top">
+			<ul class="hdtlist">
+				<li><a href="https://www.chungbuk.ac.kr/site/www/main.do" target="_blank" class="cbnufont1">충북대학교</a></li>
+				<li><a href="https://sports.chungbuk.ac.kr/" target="_blank" class="cbnufont1">충북대학교 체육진흥원</a></li>
+				<li><a href="/cbnu_center" target="_blank" class="cbnufont1">CBNU 스포츠센터</a></li>
+			</ul>
+			<a href="javascript:void(0);" class="cntadmin"></a>
+			<div class="cnta_list">
+								<!-- before_login -->
+				<ul class="before_login">
+					<li><a id="ly_login_btn" href="https://sports.cbnu.ac.kr/index.php?mid=cbnu_facilities3_2&amp;act=dispMemberLoginForm" rel="nofollow">로그인</a></li>
+					<li><a href="https://sports.cbnu.ac.kr/index.php?mid=cbnu_facilities3_2&amp;act=dispMemberSignUpForm" rel="nofollow">회원가입</a></li>
+				</ul>
+				<!-- /before_login -->
+							</div>
+			<a href="javascript:void(0);" class="allgnb"></a>
+		</div>
+		<header class="header sub">
+			<div class="wrap1400">
+				
+				<h1 class="logo-item">
+															<a href="/cbnu_facilities">
+																																		<img src="/layouts/Facilities_cbnu/img/logo.png" alt="XEDITION" />
+											</a>
+				</h1>
+				
+				<!-- SNB -->
+								<!-- GNB -->
+				<div class="gnb_wrap">
+						<div class="mobile_tab"><a href="#"><img src="/layouts/Facilities_cbnu/img/gnbm.png" alt="mobile tab"></a></div>
+						<ul class="gnb">
+							<li>
+								<a href="https://sports.cbnu.ac.kr/cbnu_facilities1_1">시설소개</a>
+																<ul class="depth2">
+									<li>
+										<a href="https://sports.cbnu.ac.kr/cbnu_facilities1_1">시설소개</a>
+																			</li><li class="more">
+										<a href="https://sports.cbnu.ac.kr/cbnu_facilities1_2_1">오시는길</a>
+										<ul class="depth3">
+											<li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities1_2_1" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">종합운동장</a>
+											</li><li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities1_2_2" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">소운동장</a>
+											</li><li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities1_2_3" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">풋살구장</a>
+											</li><li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities1_2_4" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">테니스장</a>
+											</li><li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities1_2_5" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">농구장</a>
+											</li>										</ul>									</li>								</ul>							</li><li>
+								<a href="https://sports.cbnu.ac.kr/cbnu_facilities2_1_1">이용안내</a>
+																<ul class="depth2">
+									<li class="more">
+										<a href="https://sports.cbnu.ac.kr/cbnu_facilities2_1_1">이용안내</a>
+										<ul class="depth3">
+											<li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities2_1_1" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">종합운동장</a>
+											</li><li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities2_1_2" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">소운동장</a>
+											</li><li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities2_1_3" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">풋살구장</a>
+											</li><li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities2_1_4" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">농구장</a>
+											</li><li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities2_1_5" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">테니스장</a>
+											</li><li>
+												<a href="https://sports.cbnu.ac.kr/cbnu_facilities2_1_6" class="depth3" |cond="$__Context->val3['open_window'] == 'Y'">테니스 레슨</a>
+											</li>										</ul>									</li><li>
+										<a href="https://sports.cbnu.ac.kr/cbnu_facilities2_2">유의사항</a>
+																			</li>								</ul>							</li><li>
+								<a href="https://sports.cbnu.ac.kr/cbnu_facilities3_1">시설예약</a>
+																<ul class="depth2">
+									<li>
+										<a href="https://sports.cbnu.ac.kr/cbnu_facilities3_1">예약신청</a>
+																			</li><li>
+										<a href="https://sports.cbnu.ac.kr/cbnu_facilities3_2">예약현황</a>
+																			</li><li>
+										<a href="https://sports.cbnu.ac.kr/cbnu_facilities3_3">레슨 상담신청</a>
+																			</li>								</ul>							</li><li>
+								<a href="https://sports.cbnu.ac.kr/cbnu_facilities4_1">커뮤니티</a>
+																<ul class="depth2">
+									<li>
+										<a href="https://sports.cbnu.ac.kr/cbnu_facilities4_1">공지사항</a>
+																			</li><li>
+										<a href="https://sports.cbnu.ac.kr/cbnu_facilities4_6">민원 및 건의사항</a>
+																			</li>								</ul>							</li>						</ul>
+					</div>
+				<!-- /GNB -->
+			</div>
+		</header>
+	</div>
+	<!-- END:HEADER -->
+	<!-- VISUAL-SUBHEADER -->
+	<div class="visual sub">
+								<span class="bg_img" style="background-image:url('./layouts/Facilities_cbnu/img/sub_banner_01.jpg')"></span>
+		<span class="mask"></span>
+		<div class="sub_title wrap1400">
+			<p class="en">Sports for all with care and respect</p>
+			<h2>예약현황</h2>
+		</div>
+	</div>	
+	<!-- /VISUAL -->
+	<!-- BODY -->
+	<div class="body fixed-width sub right clear">
+		<!-- CONTENT -->
+						<div class="content" id="content">
+				<!-- Sub Path -->
+								<h3>예약현황</h3>
+				<ul class="subpath">
+					<li><a href="/main"><img src="/layouts/Facilities_cbnu/layouts/Sports_cbnu/img/sub/pathhome.png" alt="HOME"></a></li>
+					<li><a href="">예약현황</a></li>
+					<li><a href="https://sports.cbnu.ac.kr/cbnu_facilities3_2">예약현황</a></li>
+				</ul>
+				<!-- END Sub Path -->
+				
+<div class="fctsub clear">
+	<a href="/cbnu_facilities3_1" class="mblink">예약신청</a>
+	<ul id="lttab">
+				<li  class='facility_type on'  code='1' >운동장</li>
+				<li  class='facility_type '  code='2' >풋살</li>
+				<li  class='facility_type '  code='3' >농구</li>
+				<li  class='facility_type '  code='4' >테니스장(하드코트)</li>
+			</ul>
+	<ul id="lttab_contents" style="padding-top:0">
+			<ul class="fntrvt clear" id='facilities' >
+			</ul>
+	</ul>
+</div>
+			</div>
+			
+		<!-- /CONTENT -->
+	</div>
+	<!-- END:BODY -->
+	<footer class="footer">
+							<div class="wrap1400">
+	<div class="fttop clear">
+		<h2>
+			<img src="/layouts/Facilities_cbnu/img/footer_logo.png" alt="CBNU 스포츠센터">
+			<p>충북대학교 | 사업자등록번호 : 315-83-00467 | 대표자명 : 박유식</p>
+		</h2>
+		<ul class="ftbtn">
+			<li><a href="/privacy">개인정보처리방침</a></li>
+			<li><a href="/noemail">이메일무단수집거부</a></li>
+					</ul>
+	</div>
+	<div class="ftinfo">
+		<p><span class="ftitit">Address</span><span>우)28644 충북 청주시 서원구 충대로 1 충북대학교 체육진흥원</span></p>
+		<p><span class="ftitit">Tel</span><span>043-249-1572</span></p>
+		<!-- TOP -->
+		<a href="#" class="btn_top"><span class="blind">위로</span></a>
+		<!-- /TOP -->
+	</div>
+	<p class="copyright">Copyright © CBNU Sports Center. All Rights Reserved.</p>
+</div>
+							<ul class="footer_mobile">
+								<li><a  href="#" id='ly_login_btn' rel="nofollow">로그인</a></li>
+				<li><a href="https://sports.cbnu.ac.kr/index.php?mid=cbnu_facilities3_2&amp;act=dispMemberSignUpForm" rel="nofollow">회원가입</a></li>
+							</ul>
+	</footer>
+	<!-- 사이트맵 -->
+	<div class="spt_stm"><div class="spt_ag">
+	<h3>CBNU 학내체육시설 사이트맵</h3>
+	<a href="javascript:void(0);" class="gnbclose"></a>
+	<ul class="sptsmlist mt50">
+		<li>
+			<a href="/cbnu_facilities1_1">시설소개</a>
+			<ul>
+				<li><a href="/cbnu_facilities1_1">시설소개</a></li>
+				<li><a href="/cbnu_facilities1_2">오시는길</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="/cbnu_facilities2_1_1">이용안내</a>
+			<ul>
+				<li><a href="/cbnu_facilities2_1_1">이용안내</a></li>
+				<li><a href="/cbnu_facilities2_2">유의사항</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="/cbnu_facilities3_1">시설예약</a>
+			<ul>
+				<li><a href="/cbnu_facilities3_1">예약신청</a></li>
+				<li><a href="/cbnu_facilities3_2">예약현황</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="/cbnu_facilities4_1">커뮤니티</a>
+			<ul>
+				<li><a href="/cbnu_facilities4_1">공지사항</a></li>
+			</ul>
+		</li>
+	</ul>
+</div></div>
+	<div class="sptstmbg"></div>
+</div>
+<!-- Login widget -->
+<section class="login_widget" style="display:none">
+		<div class="ly_dimmed"></div>
+	<div class="signin">
+		<div class="logincont">
+			<div class="login-header">
+				<h1>LOGIN</h1>
+				<p>아이디와 비밀번호를 입력해주세요.</p>
+			</div>
+			<div class="login-body">
+				<form action="https://sports.cbnu.ac.kr/index.php?act=procMemberLogin" method="post" autocomplete="off"><input type="hidden" name="error_return_url" value="/index.php?mid=cbnu_facilities3_2" /><input type="hidden" name="mid" value="cbnu_facilities3_2" /><input type="hidden" name="vid" value="" />
+					<input type="hidden" name="act" value="procMemberLogin" />
+					<input type="hidden" name="success_return_url" value="https://sports.cbnu.ac.kr/index.php?mid=cbnu_facilities3_2" />
+					<input type="hidden" name="xe_validator_id" value="layouts/xedition/layout/1" />
+					<fieldset>
+						<legend class="blind">로그인</legend>
+						<div class="control-group">
+							<div class="group">
+								<input type="text" name="user_id" id="uemail" required="true" />
+								<span class="highlight"></span>
+								<span class="bar"></span>
+								<label class="info_label" for="uemail">아이디/학번/교직원번호</label>
+							</div>
+							<div class="group">
+								<input type="password" name="password" id="upw" required="true" />
+								<span class="highlight"></span>
+								<span class="bar"></span>
+								<label class="info_label" for="upw">비밀번호</label>
+							</div>
+						</div>
+						<span class='login_txt'>충북대학교 학생 및 교직원 로그인 정보는</br>종합정보시스템(개신누리)과 동일합니다.</span>
+												<div class="control-group">
+							<label class="chk_label" for="keepid_opt">
+								<input type="checkbox" name="keep_signed" id="keepid_opt" value="Y" />
+								<span class="checkbox"></span> 로그인 유지							</label>							<div id="warning">
+								<p style="text-align:right;"><i class="xi-close"></i></p>
+								<p>브라우저를 닫더라도 로그인이 계속 유지될 수 있습니다.<br />로그인 유지 기능을 사용할 경우 다음 접속부터는 로그인할 필요가 없습니다.<br />단, 게임방, 학교 등 공공장소에서 이용 시 개인정보가 유출될 수 있으니 꼭 로그아웃을 해주세요.</p>
+								<div class="edge"></div>
+							</div>
+							<button type="submit" class="btn_submit">로그인</button>
+						</div>
+					</fieldset>
+				</form>
+			</div>
+			<div class="login-footer">
+				<a href="https://sports.cbnu.ac.kr/index.php?mid=cbnu_facilities3_2&amp;act=dispMemberFindAccount" rel="nofollow">ID/PW 찾기</a>
+				<span class="f_bar">|</span>
+				<a href="https://sports.cbnu.ac.kr/index.php?mid=cbnu_facilities3_2&amp;act=dispMemberSignUpForm" rel="nofollow">회원가입</a>
+			</div>
+		</div>
+		<a href="#" class="btn_ly_popup"><span class="blind">닫기</span></a>
+	</div>
+	<script  nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3">
+	jQuery(function ($) {
+		var keep_msg = $("#warning");
+		$(".chk_label").on("mouseenter mouseleave focusin focusout", function (e) {
+			if(e.type == "mouseenter" || e.type == "focusin") {
+				keep_msg.show();
+			}
+			else {
+				keep_msg.hide();
+			}
+		});
+		$("#ly_login_btn, #ly_btn").click(function () {
+			$(".login_widget").show();
+			return false;
+		});
+		$(".btn_ly_popup").click(function () {
+			$(".login_widget").hide();
+			return false;
+		});
+		$("input").blur(function () {
+			var $this = $(this);
+			if ($this.val()) {
+				$this.addClass("used");
+			}
+			else {
+				$this.removeClass("used");
+			}
+		});
+	});
+	</script>
+</section><!-- /Login widget -->    
+<script type="text/javascript"  nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3">
+jQuery(document).ready(function(){
+  jQuery(".allgnb").click(function(){
+    jQuery(".spt_stm").show(200);
+    jQuery(".sptstmbg").fadeIn(200);
+  });
+  jQuery(".gnbclose").click(function(){
+   jQuery(".spt_stm").hide(200);
+   jQuery(".sptstmbg").fadeOut(200);
+  });
+  jQuery(".sptstmbg").click(function(){
+   jQuery(".spt_stm").hide(200);
+   jQuery(".sptstmbg").fadeOut(200);
+  });
+	  jQuery(".cntadmin").click(function(){
+		jQuery(".cnta_list ").toggle(100);
+	  });
+});
+</script><script type="text/javascript">//<![CDATA[
+var msg_popup_do_not_display = '%d일 동안 다시보지 않기';
+jQuery(function(){
+});
+//]]></script>
+<!-- ETC -->
+<div class="wfsr"></div>
+	<script src="/addons/autolink/autolink.js?20231117162219" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>	<script src="/common/js/plugins/ui/jquery-ui.min.js?20231117162317" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>	<script src="/common/js/plugins/ui/jquery.ui.datepicker-ko.js?20231117162317" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>	<script src="/addons/resize_image/js/resize_image.min.js?20231117162230" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script>	<script src="/modules/its/skins/cbnu_facilities3_2/js/jQuery.list.js?20260317152529" nonce="ac61f2fa8464fda1b716e5a8130cd23d6fdb27d42126773c1054b52d317116d3"></script></body>
+</html>

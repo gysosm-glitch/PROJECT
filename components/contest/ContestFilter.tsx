@@ -52,27 +52,6 @@ export default function ContestFilter({ activeField, activeRegion, onChange }: C
         </div>
       </div>
 
-      {/* 지역 필터 */}
-      <div>
-        <p className="text-xs font-medium text-gray-400 mb-2 uppercase">지역</p>
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none -mx-1 px-1">
-          {REGION_FILTERS.map(({ value, label }) => (
-            <button
-              key={value}
-              id={`filter-region-${value}`}
-              onClick={() => onChange(activeField, value)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
-                activeRegion === value
-                  ? 'bg-accent-600 text-white shadow-lg shadow-accent-600/30'
-                  : 'bg-surface-elevated border border-surface-border text-gray-400 hover:text-white hover:border-accent-600/50'
-              }`}
-            >
-              {value !== 'all' && <span>{CONTEST_REGION_EMOJIS[value as ContestRegion]}</span>}
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

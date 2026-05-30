@@ -128,7 +128,7 @@ function CreateRecruitmentRoomContent() {
           host_id: user.id,
           type: roomType,
           contest_id: roomType === 'contest' ? selectedContestId : null,
-          sports_facility: roomType === 'sports' ? selectedFacility : null,
+          sports_facility: roomType === 'sports' ? (selectedFacility === 'other' ? null : selectedFacility) : null,
           sports_date: roomType === 'sports' ? selectedDate : null,
           sports_start_time: roomType === 'sports' ? selectedStartTime : null,
           sports_end_time: roomType === 'sports' ? selectedEndTime : null,

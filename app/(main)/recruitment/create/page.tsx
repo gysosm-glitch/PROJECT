@@ -33,7 +33,7 @@ function CreateRecruitmentRoomContent() {
   const [contestsLoading, setContestsLoading] = useState(false)
 
   // 스포츠 모집방
-  const [selectedFacility, setSelectedFacility] = useState<FacilityType | ''>('')
+  const [selectedFacility, setSelectedFacility] = useState<FacilityType | 'other' | ''>('')
   const [selectedDate, setSelectedDate] = useState<string>('')
   const [selectedStartTime, setSelectedStartTime] = useState<string>('')
   const [selectedEndTime, setSelectedEndTime] = useState<string>('')

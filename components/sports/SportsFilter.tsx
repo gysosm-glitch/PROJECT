@@ -10,8 +10,8 @@ import {
 } from '@/types/database'
 
 interface SportsFilterProps {
-  activeFacility: FacilityType
-  onChange: (facility: FacilityType) => void
+  activeFacility: FacilityType | 'other'
+  onChange: (facility: FacilityType | 'other') => void
 }
 
 const GROUPS: { value: FacilityGroup; emoji: string }[] = [
@@ -22,11 +22,12 @@ const GROUPS: { value: FacilityGroup; emoji: string }[] = [
 ]
 
 // 어떤 FacilityType이 어떤 그룹에 속하는지 역방향 조회
-function getGroupOf(facility: FacilityType): FacilityGroup {
-  for (const [group, courts] of Object.entries(FACILITY_GROUP_COURTS) as [FacilityGroup, FacilityType[]][]) {
+function getGroupOf(facility: FacilityType | 'other'): FacilityGroup {
+  if (facility === 'other') return 'other'
+  for (const [group, courts] of Object.entries(FACILITY_GROUP_COURTS) as [FacilityGroup, (FacilityType | 'other')[]][]) {
     if ((courts as string[]).includes(facility)) return group
   }
-  return 'main_field'
+  return 'futsal'
 }
 
 export default function SportsFilter({ activeFacility, onChange }: SportsFilterProps) {

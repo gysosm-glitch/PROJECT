@@ -6,7 +6,7 @@ import { Clock, Users } from 'lucide-react'
 
 interface ReservationTimelineProps {
   reservations: SportsReservation[]
-  facility: FacilityType
+  facility: FacilityType | 'other'
   date: string
 }
 

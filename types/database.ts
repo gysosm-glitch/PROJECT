@@ -273,6 +273,44 @@ export type Database = {
         }
         Update: Partial<Database['public']['Tables']['room_applications']['Insert']>
       }
+      chat_messages: {
+        Row: {
+          id: string
+          room_id: string
+          sender_id: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          sender_id: string
+          content: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['chat_messages']['Insert']>
+      }
+      user_evaluations: {
+        Row: {
+          id: string
+          room_id: string
+          reviewer_id: string
+          reviewee_id: string
+          score: number
+          comment: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          reviewer_id: string
+          reviewee_id: string
+          score: number
+          comment?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['user_evaluations']['Insert']>
+      }
     }
   }
 }
@@ -319,6 +357,8 @@ export type Report = Database['public']['Tables']['reports']['Row']
 export type Notification = Database['public']['Tables']['notifications']['Row']
 export type RecruitmentRoom = Database['public']['Tables']['recruitment_rooms']['Row']
 export type RoomApplication = Database['public']['Tables']['room_applications']['Row']
+export type ChatMessage = Database['public']['Tables']['chat_messages']['Row']
+export type UserEvaluation = Database['public']['Tables']['user_evaluations']['Row']
 
 // UI helper maps
 export const CONTEST_FIELD_LABELS: Record<ContestField, string> = {

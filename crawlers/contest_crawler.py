@@ -8,7 +8,10 @@ import os
 import re
 import time
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
+
+def get_kst_now():
+    return datetime.now(timezone(timedelta(hours=9)))
 from typing import Optional
 
 import requests
@@ -161,7 +164,7 @@ def _extract_region(contest: dict) -> str:
 def delete_expired():
     """마감일 지난 공모전 자동 삭제"""
     from datetime import date
-    today = date.today().isoformat()
+    today = get_kst_now().date().isoformat()
     url = f"{SUPABASE_URL}/rest/v1/contests?end_date=lt.{today}"
     headers = {
         'apikey': SUPABASE_KEY,
@@ -245,9 +248,9 @@ def crawl_contestkorea():
                             start_day = match.group(2)
                             end_month = match.group(3)
                             end_day = match.group(4)
-                            current_year = datetime.now().year
+                            current_year = get_kst_now().year
                             
-                            if int(start_month) > int(end_month) and int(end_month) < datetime.now().month:
+                            if int(start_month) > int(end_month) and int(end_month) < get_kst_now().month:
                                 start_year = current_year
                                 end_year = current_year + 1
                             else:
@@ -278,7 +281,7 @@ def crawl_contestkorea():
                         'thumbnail_url': None,
                         'is_active': True,
                         'source': 'contestkorea',
-                        'last_crawled_at': datetime.utcnow().isoformat(),
+                        'last_crawled_at': get_kst_now().isoformat(),
                     }
 
                     if upsert_contest(contest):
@@ -361,7 +364,7 @@ def crawl_wevity():
                             
                         if days_offset is not None:
                             from datetime import timedelta
-                            dt = datetime.utcnow() + timedelta(days=days_offset)
+                            dt = get_kst_now() + timedelta(days=days_offset)
                             # Adjust to KST
                             kst_dt = dt + timedelta(hours=9)
                             end_date = kst_dt.strftime("%Y-%m-%d")
@@ -370,7 +373,7 @@ def crawl_wevity():
                         continue
 
                     # 시작일 (위비티 리스트에는 없으므로 오늘 날짜로 대체)
-                    start_date = datetime.now().strftime("%Y-%m-%d")
+                    start_date = get_kst_now().strftime("%Y-%m-%d")
 
                     contest = {
                         'title': title,
@@ -382,7 +385,7 @@ def crawl_wevity():
                         'thumbnail_url': None,
                         'is_active': True,
                         'source': 'wevity',
-                        'last_crawled_at': datetime.utcnow().isoformat(),
+                        'last_crawled_at': get_kst_now().isoformat(),
                     }
 
                     if upsert_contest(contest):
@@ -468,7 +471,7 @@ def crawl_linkareer():
                             continue
                             
                         # 마감기한이 이미 지난 공모전은 제외
-                        today_str = datetime.now().strftime("%Y-%m-%d")
+                        today_str = get_kst_now().strftime("%Y-%m-%d")
                         if end_date < today_str:
                             continue
                             
@@ -492,7 +495,7 @@ def crawl_linkareer():
                             'thumbnail_url': thumbnail_url,
                             'is_active': True,
                             'source': 'linkareer',
-                            'last_crawled_at': datetime.utcnow().isoformat(),
+                            'last_crawled_at': get_kst_now().isoformat(),
                         }
                         
                         if upsert_contest(contest):
@@ -515,12 +518,12 @@ def crawl_linkareer():
 
 if __name__ == '__main__':
     logger.info("===== 공모전 크롤러 시작 =====")
-    start = datetime.now()
+    start = get_kst_now()
 
     crawl_contestkorea()
     crawl_wevity()
     crawl_linkareer()
     delete_expired()
 
-    elapsed = (datetime.now() - start).seconds
+    elapsed = (get_kst_now() - start).seconds
     logger.info(f"===== 크롤링 완료 ({elapsed}초) =====")

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Users, ShieldCheck, UserCheck, XCircle } from 'lucide-react'
+import RoomChat from '@/components/room/RoomChat'
+import EvaluationModal from '@/components/room/EvaluationModal'
 import { createClient } from '@/lib/supabase/client'
 
 export default function RecruitmentRoomDetail() {
@@ -23,6 +25,7 @@ export default function RecruitmentRoomDetail() {
   const [loading, setLoading] = useState(true)
   const [applyMessage, setApplyMessage] = useState('')
   const [isApplying, setIsApplying] = useState(false)
+  const [showEvalModal, setShowEvalModal] = useState(false)
 
   useEffect(() => {
     if (params.id) {
@@ -145,7 +148,8 @@ export default function RecruitmentRoomDetail() {
   if (!room) return null
 
   const isHost = user?.id === room.host_id
-  const isClosed = room.status === 'closed'
+    const canChat = isHost || myApplication?.status === 'accepted'
+const isClosed = room.status === 'closed'
 
   return (
     <div className="min-h-screen pt-20 pb-12">
@@ -239,8 +243,15 @@ export default function RecruitmentRoomDetail() {
                    '신청 대기 중입니다 ⏳'}
                 </div>
               ) : isClosed ? (
-                <div className="text-center p-3 bg-slate-100 rounded-xl text-slate-500 font-medium">
-                  모집이 마감되었습니다
+                <div className="space-y-3">
+                  <div className="text-center p-3 bg-slate-100 rounded-xl text-slate-500 font-medium">
+                    모집이 마감되었습니다
+                  </div>
+                  {canChat && (
+                    <button onClick={() => setShowEvalModal(true)} className="btn-secondary w-full text-center block py-2.5">
+                      ⭐️ 팀원 평가하기
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -313,7 +324,16 @@ export default function RecruitmentRoomDetail() {
             )}
           </div>
         )}
+      
+        {/* Chat System */}
+        {canChat && (
+          <RoomChat roomId={room.id} currentUser={user} />
+        )}
       </div>
+
+      {showEvalModal && (
+        <EvaluationModal roomId={room.id} currentUser={user} onClose={() => setShowEvalModal(false)} />
+      )}
     </div>
   )
 }

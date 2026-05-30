@@ -8,8 +8,11 @@
 import os
 import time
 import logging
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from typing import Optional
+
+def get_kst_now():
+    return datetime.now(timezone(timedelta(hours=9)))
 
 import requests
 from supabase import create_client, Client
@@ -234,7 +237,7 @@ def get_schedule(facility_type: str, code: str, target_date: str,
                         'start_time': slot_start,
                         'end_time': slot_end,
                         'status': 'reserved' if is_unavailable else 'available',
-                        'last_crawled_at': datetime.utcnow().isoformat(),
+                        'last_crawled_at': get_kst_now().isoformat(),
                     })
 
             except Exception as parse_e:
@@ -272,7 +275,7 @@ def crawl_all():
         logger.error("로그인 실패로 크롤링 중단")
         return
 
-    today = date.today()
+    today = get_kst_now().date()
     dates = [(today + timedelta(days=i)).strftime('%Y%m%d') for i in range(7)]
     logger.info(f"크롤링 대상 날짜: {dates[0]} ~ {dates[-1]} (7일치)")
 
@@ -303,7 +306,7 @@ def crawl_all():
 
 if __name__ == '__main__':
     logger.info("===== 시설 예약 크롤러 시작 =====")
-    start = datetime.now()
+    start = get_kst_now()
     crawl_all()
-    elapsed = (datetime.now() - start).seconds
+    elapsed = (get_kst_now() - start).seconds
     logger.info(f"===== 크롤링 완료 ({elapsed}초) =====")
